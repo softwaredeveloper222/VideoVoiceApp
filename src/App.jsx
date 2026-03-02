@@ -1503,8 +1503,11 @@ const styles = {
     alignItems: "center",
   },
   bgTitle: {
-    fontSize: 11, fontWeight: 700,
-    color: "rgba(255,255,255,0.38)",
+    fontSize: 12, fontWeight: 700,
+    backgroundImage: "linear-gradient(120deg, #ffffff, #ff90c5)",
+    WebkitBackgroundClip: "text",
+    backgroundClip: "text",
+    color: "transparent",
     margin: "0 0 10px",
     letterSpacing: "0.1em", textTransform: "uppercase",
   },
