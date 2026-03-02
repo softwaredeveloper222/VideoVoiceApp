@@ -1498,6 +1498,9 @@ const styles = {
   // ── Background picker
   bgSection: {
     marginBottom: 16,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
   },
   bgTitle: {
     fontSize: 11, fontWeight: 700,
