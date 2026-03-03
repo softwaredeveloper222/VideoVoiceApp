@@ -569,8 +569,30 @@ function RecordScreen({ onNext, onBack }) {
     return { ...DEFAULT_POST_PROCESSING };
   };
   const [postProcessing, setPostProcessing] = useState(loadSavedPostProcessing);
-  const [postProcessVisible, setPostProcessVisible] = useState(true);
+  const [postProcessVisible, setPostProcessVisible] = useState(() => !window.matchMedia("(max-width: 480px)").matches);
   const [postProcessAnimatingOut, setPostProcessAnimatingOut] = useState(false);
+  const [showBgPanel, setShowBgPanel] = useState(false);
+  const [bottomPanelAnimatingOut, setBottomPanelAnimatingOut] = useState(false);
+  const [controlsAnimatingOut, setControlsAnimatingOut] = useState(false);
+
+  const handleBottomPanelHide = () => {
+    setBottomPanelAnimatingOut(true);
+  };
+  const handleBottomPanelAnimEnd = (e) => {
+    if (e.animationName === "scrollFadeOut") {
+      setShowBgPanel(false);
+      setBottomPanelAnimatingOut(false);
+    }
+  };
+  const handleViewBgClick = () => {
+    setControlsAnimatingOut(true);
+  };
+  const handleControlsAnimEnd = (e) => {
+    if (e.animationName === "controlsBtnOut") {
+      setShowBgPanel(true);
+      setControlsAnimatingOut(false);
+    }
+  };
 
   const handlePostProcessHide = () => {
     setPostProcessAnimatingOut(true);
@@ -912,20 +934,38 @@ function RecordScreen({ onNext, onBack }) {
             </div>
       )}
 
-      {/* Bottom panel */}
-      <div style={styles.bottomPanel} className="bottom-panel">
-
-        {/* Background picker */}
-        {phase === "setup" && (
-          <div style={styles.bgSection} className="bg-section anim-slide-up">
-            <div style={styles.bgTitleBar}>
-              <p style={styles.bgTitle}>
-                Virtual Background
-                {!segmenterReady && !segmenterError && (
-                  <span style={styles.segmenterLoadingText}> · loading AI…</span>
-                )}
-              </p>
-            </div>
+      {/* Bottom area — unified: one button moves between collapsed/expanded positions */}
+      {(phase === "setup" && (showBgPanel || bottomPanelAnimatingOut) && !controlsAnimatingOut) && (
+        <div
+          style={styles.bottomAreaExpanded}
+          className={`bottom-area-expanded ${bottomPanelAnimatingOut ? "anim-scroll-fade-out" : "anim-scroll-fade-in"}`}
+          onAnimationEnd={handleBottomPanelAnimEnd}
+        >
+          {/* Same View Virtual Background button as first screen — moved here, toggles panel */}
+          <button
+            type="button"
+            onClick={handleBottomPanelHide}
+            disabled={bottomPanelAnimatingOut}
+            style={{ ...styles.viewBgBtn, ...styles.viewBgBtnAbovePanel }}
+            className="view-bg-btn view-bg-btn-panel"
+            aria-label="Hide virtual backgrounds"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="2" />
+              <circle cx="17" cy="7" r="3" />
+              <path d="M2 20 L8 12 L14 16 L22 8" />
+              <path d="M2 20 L12 10 L22 20 Z" />
+            </svg>
+          </button>
+          {/* Panel — same color as button, connected as one */}
+          <div style={styles.bottomPanelExpandedOnly} className="bottom-panel">
+            <div style={styles.bgSection} className="bg-section">
+            <p style={{ ...styles.bgTitle, marginBottom: 14, textAlign: "center" }}>
+              Choose your background
+              {!segmenterReady && !segmenterError && (
+                <span style={styles.segmenterLoadingText}> · loading AI…</span>
+              )}
+            </p>
             <div style={styles.bgThumbs} className="bg-thumbs">
               {BACKGROUNDS.map((bg) => (
                   <button
@@ -970,21 +1010,57 @@ function RecordScreen({ onNext, onBack }) {
               onChange={handleImageUpload}
               style={{ display: "none" }}
             />
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Controls row — record button (always centered) + Edge Smoothness (absolutely positioned) */}
-        <div style={styles.controlsRow} className="controls-row">
-          {phase === "setup" && (
+      {/* Controls row — record button + View Virtual Background (when collapsed); countdown/recording/preview */}
+      {!(phase === "setup" && (showBgPanel || bottomPanelAnimatingOut) && !controlsAnimatingOut) && (
+        <div
+          style={{
+            ...styles.bottomPanel,
+            ...styles.bottomPanelCollapsed,
+          }}
+          className="bottom-panel"
+        >
+        <div
+          style={{
+            ...styles.controlsRow,
+            ...(phase === "setup" ? styles.controlsRowColumn : {}),
+          }}
+          className="controls-row"
+        >
+          {phase === "setup" && (showBgPanel === false && !bottomPanelAnimatingOut || controlsAnimatingOut) && (
+            <div
+              className={`controls-setup-btns ${controlsAnimatingOut ? "anim-controls-btn-out" : "anim-controls-btn-in"}`}
+              onAnimationEnd={handleControlsAnimEnd}
+              style={{ display: "flex", flexDirection: "inherit", gap: "inherit", alignItems: "center", justifyContent: "center" }}
+            >
             <button
               onClick={startCountdown}
-              disabled={!cameraReady}
+              disabled={!cameraReady || controlsAnimatingOut}
               style={{ ...styles.recordBtn, opacity: cameraReady ? 1 : 0.4 }}
               className="record-btn"
               aria-label="Start recording"
             >
               <span style={styles.recordDot} />
             </button>
+            <button
+              type="button"
+              onClick={handleViewBgClick}
+              style={styles.viewBgBtn}
+              className="view-bg-btn"
+              aria-label="View virtual backgrounds"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="2" />
+                <circle cx="17" cy="7" r="3" />
+                <path d="M2 20 L8 12 L14 16 L22 8" />
+                <path d="M2 20 L12 10 L22 20 Z" />
+              </svg>
+            </button>
+            </div>
           )}
           {phase === "countdown" && (
             <button style={{ ...styles.recordBtn, opacity: 0.4 }} disabled aria-label="Preparing…">
@@ -1015,12 +1091,13 @@ function RecordScreen({ onNext, onBack }) {
         </div>
 
         {/* Hint */}
-        {phase === "setup" && cameraReady && (
+        {/* {phase === "setup" && cameraReady && (
           <p style={styles.hint} className="anim-fade-in d5">
             Tap to start · max {MAX_DURATION} seconds
           </p>
-        )}
-      </div>
+        )} */}
+        </div>
+      )}
 
     </div>
   );
@@ -1659,17 +1736,86 @@ const styles = {
   // ── Bottom panel (camera)
   bottomPanel: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    background: "linear-gradient(to top, rgba(0,0,0,0.72) 55%, transparent 100%)",
-    padding: "28px 20px 28px",
+    background: "rgba(55,60,75,0.96)",
+    padding: "24px 20px 28px",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     zIndex: 10,
+  },
+  bottomAreaExpanded: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "stretch",
+    padding: 0,
+    zIndex: 10,
+  },
+  viewBgBtnAbovePanel: {
+    alignSelf: "center",
+    marginBottom: -3,
+    boxShadow: "none",
+    borderLeft: "3px solid white",
+    borderRight: "3px solid white",
+    borderTop: "3px solid white",
+    borderBottom: "none",
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderRadius: "10px 10px 0 0",
+    zIndex: 99999,
+  },
+  bottomPanelExpandedOnly: {
+    border: "none",
+    borderTop: "3px solid white",
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    padding: "20px 20px calc(24px + env(safe-area-inset-bottom, 0px))",
+    background: "rgb(40,48,65)",
+    width: "100%",
+    boxSizing: "border-box",
+  },
+  bottomPanelCollapsed: {
+    background: "transparent",
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    padding: "20px 20px calc(24px + env(safe-area-inset-bottom, 0px))",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-end",
+    alignItems: "center",
   },
 
   // ── Background picker
   bgSection: {
-    marginBottom: 16,
+    marginBottom: 0,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
+    width: "100%",
+  },
+  viewBgBtnSquare: {
+    width: 56, height: 48,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    alignSelf: "center",
+    background: "rgba(220,225,235,0.95)",
+    border: "1.5px solid rgba(180,185,200,0.9)",
+    borderRadius: 12,
+    color: "rgba(70,75,90,0.95)",
+    cursor: "pointer", padding: 0,
+    transition: "all 0.15s",
+  },
+  recordBtnSquare: {
+    width: 52, height: 52,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    background: "rgba(40,48,65,0.98)",
+    border: "4px solid rgba(255,255,255,0.95)",
+    borderRadius: 10,
+    cursor: "pointer", padding: 0,
+    transition: "all 0.15s",
   },
   bgTitleBar: {
     display: "inline-flex",
@@ -1683,23 +1829,24 @@ const styles = {
     marginBottom: 10,
   },
   bgTitle: {
-    fontSize: 12, fontWeight: 700,
-    color: "#ffffff",
+    fontSize: 14, fontWeight: 500,
+    color: "rgba(255,255,255,0.9)",
     margin: 0,
-    letterSpacing: "0.1em", textTransform: "uppercase",
+    letterSpacing: "0.02em",
   },
   bgThumbs: {
     display: "flex",
-    gap: 8,
+    gap: 10,
     overflowX: "auto",
     paddingBottom: 4,
     WebkitOverflowScrolling: "touch",
     scrollbarWidth: "none",
     justifyContent: "center",
+    flexWrap: "nowrap",
   },
   bgThumb: {
-    width: 56, height: 40, borderRadius: 8,
-    border: "2px solid rgba(255,255,255,0.1)",
+    width: 72, height: 48, borderRadius: 10,
+    border: "2px solid rgba(255,255,255,0.12)",
     cursor: "pointer", padding: 0, flexShrink: 0,
     display: "flex", flexDirection: "column",
     alignItems: "center", justifyContent: "center",
@@ -1708,9 +1855,9 @@ const styles = {
     position: "relative",
   },
   bgThumbActive: {
-    border: "2.5px solid #fff",
-    boxShadow: "0 0 0 3px rgba(255,255,255,0.18)",
-    transform: "scale(1.06)",
+    border: "2px solid #c2185b",
+    boxShadow: "0 0 0 1px rgba(194,24,91,0.3)",
+    transform: "scale(1.02)",
   },
   bgThumbLabel: {
     fontSize: 8, color: "rgba(255,255,255,0.55)",
@@ -1801,24 +1948,39 @@ const styles = {
     display: "flex", justifyContent: "center", alignItems: "center",
     minHeight: 88,
   },
+  controlsRowColumn: {
+    flexDirection: "column",
+    gap: 14,
+  },
+  viewBgBtn: {
+    display: "flex", alignItems: "center", justifyContent: "center",
+    width: 56, height: 48,
+    padding: 0,
+    background: "rgb(40,48,65)",
+    border: "3px solid white",
+    borderRadius: 10,
+    color: "#fff",
+    cursor: "pointer", transition: "all 0.15s",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.3)",    
+  },
   recordBtn: {
     width: 76, height: 76, borderRadius: "50%",
-    background: "linear-gradient(145deg, rgba(20,20,35,0.85) 0%, rgba(35,18,55,0.9) 100%)",
-    border: "4px solid rgba(255,255,255,0.7)",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)",
+    background: "#e53935",
+    border: "4px solid rgba(255,255,255,0.9)",
+    boxShadow: "0 2px 12px rgba(229,57,53,0.5)",
     display: "flex", alignItems: "center", justifyContent: "center",
     cursor: "pointer", padding: 0, transition: "all 0.15s",
   },
   recordBtnActive: {
-    border: "4px solid #e53935",
-    background: "linear-gradient(145deg, rgba(180,25,60,0.35) 0%, rgba(35,18,55,0.9) 100%)",
-    boxShadow: "0 4px 24px rgba(229,57,53,0.35), inset 0 1px 0 rgba(255,255,255,0.1)",
+    border: "4px solid rgba(255,255,255,0.9)",
+    background: "#e53935",
+    boxShadow: "0 2px 16px rgba(229,57,53,0.6)",
     animation: "recordPulse 2s ease-in-out infinite",
   },
   recordDot: {
     width: 52, height: 52, borderRadius: "50%",
-    background: "#e53935", transition: "all 0.15s",
-    boxShadow: "0 2px 16px rgba(229,57,53,0.5)",
+    background: "transparent",
+    transition: "all 0.15s",
   },
   stopSquare: {
     width: 28, height: 28, borderRadius: 7,
@@ -2017,13 +2179,21 @@ if (typeof document !== "undefined") {
     @keyframes magicWandShine { 0%,100%{opacity:1;filter:drop-shadow(0 0 2px rgba(194,24,91,0.4))} 50%{opacity:0.9;filter:drop-shadow(0 0 6px rgba(194,24,91,0.7))} }
     @keyframes magicWandFloat { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-2px) rotate(2deg)} }
     @keyframes edgeBtnBgPulse { 0%,100%{background-position:0% 50%;box-shadow:0 0 12px rgba(194,24,91,0.2)} 50%{background-position:100% 50%;box-shadow:0 0 20px rgba(194,24,91,0.4)} }
+    @keyframes scrollFadeIn  { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    @keyframes scrollFadeOut { from{transform:translateY(0)} to{transform:translateY(100%)} }
+    @keyframes controlsBtnIn  { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
+    @keyframes controlsBtnOut { from{opacity:1;transform:scale(1)} to{opacity:0;transform:scale(0.85)} }
 
     /* ── Animation utility classes ────────────────────────────── */
     .anim-fade-in   { animation: fadeIn    0.5s ease both; }
     .anim-slide-up  { animation: slideUp   0.5s ease both; }
+    .bottom-area-expanded.anim-scroll-fade-in  { animation: scrollFadeIn  0.35s linear both; }
+    .bottom-area-expanded.anim-scroll-fade-out { animation: scrollFadeOut 0.3s linear forwards; pointer-events: none; }
     .anim-slide-down{ animation: slideDown 0.45s ease both; }
     .anim-scale-in  { animation: scaleIn   0.5s ease both; }
     .anim-pop-in    { animation: popIn     0.55s cubic-bezier(.34,1.56,.64,1) both; }
+    .anim-controls-btn-in  { animation: controlsBtnIn 0.3s cubic-bezier(.34,1.56,.64,1) both; }
+    .anim-controls-btn-out { animation: controlsBtnOut 0.25s ease forwards; }
 
     /* Staggered delays */
     .d1 { animation-delay: 0.05s; }
@@ -2065,8 +2235,20 @@ if (typeof document !== "undefined") {
     .outline-btn:active { transform:scale(0.97) !important; }
     .back-btn:hover  { filter:brightness(1.25); }
     .back-btn:active { transform:scale(0.92); }
+    .record-btn {
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease !important;
+    }
     .record-btn:hover { border-color:#fff !important; transform:scale(1.04); }
-    .record-btn:active { transform:scale(0.95) !important; }
+    .record-btn:active { transform:scale(0.92); }
+    .view-bg-btn {
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, border-color 0.2s ease !important;
+    }
+    .view-bg-btn:hover { transform:translateY(-2px) scale(1.03); }
+    .view-bg-btn:active { transform:scale(0.94); }
+    .controls-row .view-bg-btn:hover { background:linear-gradient(135deg,rgba(45,52,72,0.98),rgba(55,45,85,0.98)) !important; border-color:rgba(255,255,255,0.35) !important; }
+    .view-bg-btn-panel:hover { transform:none !important; background:rgb(40,48,65) !important; border-left-color:white !important; border-right-color:white !important; border-top-color:white !important; }
+    .record-btn-square:hover { border-color:#fff !important; background:rgba(50,58,78,0.98) !important; }
+    .record-btn-square:active { transform:scale(0.95) !important; }
     .bg-thumb:hover  { transform:scale(1.08); opacity:0.88; }
     .bg-thumb:active { transform:scale(0.94); }
     .hero-rec-btn:after {
