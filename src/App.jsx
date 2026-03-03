@@ -685,6 +685,7 @@ function RecordScreen({ onNext, onBack }) {
   const handleImageUpload = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
+    e.target.value = "";
     if (uploadedImage?.src?.startsWith("blob:")) {
       URL.revokeObjectURL(uploadedImage.src);
     }
