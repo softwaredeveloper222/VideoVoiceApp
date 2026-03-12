@@ -168,7 +168,7 @@ export const styles = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "flex-start",
-    padding: "60px 24px 80px",
+    // padding: "60px 24px 80px",
     position: "relative",
     zIndex: 1,
   },
@@ -642,7 +642,7 @@ export const styles = {
   // ── Buttons (shared)
   outlineBtn: {
     display: "inline-flex", alignItems: "center", justifyContent: "center",
-    padding: "16px 60px",
+    padding: "16px 60px",    
     minWidth: 340,
     background: "#07182D",
     border: "2px solid rgba(255, 255, 255, 0.6)",

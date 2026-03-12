@@ -4,31 +4,39 @@ export default function IntroScreen({ onNext }) {
   return (
     <div style={styles.bgImageScreen} className="gradient-screen">
       <div style={styles.welcomeCenter} className="welcome-center">
-        <img
-          src="/img/CISCO@Desktop.png"
-          srcSet="/img/CISCO@Desktop.png 2x"
-          alt="Cisco"
-          className="anim-fade-in intro-cisco-logo"
-          style={{ height: 60, objectFit: "contain", marginBottom: 48 }}
-        />
-        <img
-          src="/img/LWYW_brand_square.png"
-          alt="LWYW"
-          className="anim-scale-in d2 intro-lwyw-brand"
-          style={{ width: "min(380px, 50vw)", objectFit: "contain", marginBottom: 24 }}
-        />
+        <picture>
+          <source media="(max-width: 360px)" srcSet="/img/CISCO@0.5.png" />
+          <source media="(max-width: 480px)" srcSet="/img/CISCO.png" />
+          <source media="(max-width: 768px)" srcSet="/img/CISCO@1.5x.png" />
+          <img
+            src="/img/CISCO@2x.png"
+            alt="Cisco"
+            className="anim-fade-in intro-cisco-logo"
+            style={{ height: 60, objectFit: "contain", marginTop: 48, marginBottom: 48 }}
+          />
+        </picture>
+        <picture>
+          <source media="(max-width: 360px)" srcSet="/img/LWYW@0.5.png" />
+          <source media="(max-width: 480px)" srcSet="/img/LWYW@0.75.png" />
+          <source media="(max-width: 768px)" srcSet="/img/LWYW.png" />
+          <img
+            src="/img/LWYW@1.5x.png"
+            alt="LWYW"
+            className="anim-scale-in d2 intro-lwyw-brand"
+            style={{ width: "min(380px, 50vw)", objectFit: "contain", marginBottom: 24 }}
+          />
+        </picture>
         <p className="anim-slide-up d3 intro-hashtags" style={{
           fontSize: 20, fontWeight: 200, color: "#ffffff",
           textAlign: "center", lineHeight: 1, margin: "0 0 16px",
         }}>
           #WeAreCisco<br />#LoveWhereYouWork
         </p>
-        {<br />}
         {/* <div className="intro-btn-spacer" style={{ flex: 1, minHeight: 18 }} /> */}
         <p className="anim-slide-up d4 intro-description" style={{
           fontSize: 19, fontWeight: 100, color: "rgba(255,255,255,1.0)",
           fontFamily: "'Barlow', sans-serif",
-          textAlign: "center", lineHeight: 1.3, margin: "0 0 0",
+          textAlign: "center", lineHeight: 1.3, margin: "16px 0 0",
           maxWidth: 320, padding: "0 20px",
         }}>
           Share the love! Record a quick video about why this is your place.

@@ -5,21 +5,30 @@ export default function SuccessScreen({ onReset }) {
     <div style={styles.bgImageScreen} className="gradient-screen">
       <div style={styles.welcomeCenter} className="welcome-center">
         {/* Cisco logo */}
-        <img
-          src="/img/CISCO@Desktop.png"
-          srcSet="/img/CISCO@Desktop.png 2x"
-          alt="Cisco"
-          className="anim-fade-in intro-cisco-logo"
-          style={{ height: 60, objectFit: "contain", marginBottom: 48 }}
-        />
+        <picture>
+          <source media="(max-width: 360px)" srcSet="/img/CISCO@0.75.png" />
+          <source media="(max-width: 480px)" srcSet="/img/CISCO.png" />
+          <source media="(max-width: 768px)" srcSet="/img/CISCO@1.5x.png" />
+          <img
+            src="/img/CISCO@2x.png"
+            alt="Cisco"
+            className="anim-fade-in intro-cisco-logo"
+            style={{ height: 60, objectFit: "contain", marginTop: 48, marginBottom: 48 }}
+          />
+        </picture>
 
         {/* LWYW square brand */}
-        <img
-          src="/img/LWYW_brand_square.png"
-          alt="LWYW"
-          className="anim-scale-in d2 intro-lwyw-brand success-lwyw-brand"
-          style={{ width: "min(380px, 50vw)", objectFit: "contain", marginBottom: 80 }}
-        />
+        <picture>
+          <source media="(max-width: 360px)" srcSet="/img/LWYW@0.5.png" />
+          <source media="(max-width: 480px)" srcSet="/img/LWYW@0.75.png" />
+          <source media="(max-width: 768px)" srcSet="/img/LWYW.png" />
+          <img
+            src="/img/LWYW@1.5x.png"
+            alt="LWYW"
+            className="anim-scale-in d2 intro-lwyw-brand success-lwyw-brand"
+            style={{ width: "min(380px, 50vw)", objectFit: "contain", marginBottom: 80 }}
+          />
+        </picture>
 
         {/* Thank you heading */}
         <h1

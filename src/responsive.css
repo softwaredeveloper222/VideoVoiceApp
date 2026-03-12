@@ -7,7 +7,7 @@
 
   /* Welcome center (Intro / Question / Email) */
   .welcome-center {
-    padding: 48px 24px 60px !important;
+    padding: 0px 24px 0px !important;
   }
 
   /* ── Intro screen ── */
@@ -118,7 +118,7 @@
 
   /* Welcome center */
   .welcome-center {
-    padding: 56px 24px 32px !important;
+    padding: 0px 24px 0px !important;
   }
 
   /* ── Intro screen ── */
@@ -293,7 +293,7 @@
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 360px) {
   .welcome-center {
-    padding: 16px 24px 28px !important;
+    padding: 0px 48px 0px !important;
   }
 
   .intro-cisco-logo {
@@ -343,8 +343,8 @@
 
   .outline-btn,
   .filled-btn {
-    min-width: 0 !important;
-    padding: 13px 20px !important;
+    min-width: 240px !important;
+    padding: 13px 36px !important;
     font-size: 12px !important;
   }
 
@@ -397,7 +397,7 @@
    ══════════════════════════════════════════════════════════ */
 @media (max-height: 500px) and (orientation: landscape) {
   .welcome-center {
-    padding: 16px 16px 20px !important;
+    padding: 0px 16px 0px !important;
   }
 
   .intro-cisco-logo {

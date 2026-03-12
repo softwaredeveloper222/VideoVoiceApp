@@ -63,21 +63,25 @@ body {
 .email-input::placeholder {
   color: #fff !important;
   opacity: 1 !important;
+  font-family: 'CiscoSansTT', sans-serif !important;
 }
 
 .email-input::-webkit-input-placeholder {
   color: #fff !important;
   opacity: 1 !important;
+  font-family: 'CiscoSansTT', sans-serif !important;
 }
 
 .email-input::-moz-placeholder {
   color: #fff !important;
   opacity: 1 !important;
+  font-family: 'CiscoSansTT', sans-serif !important;
 }
 
 .email-input:-ms-input-placeholder {
-  color: #fff !important;
+  color: #ffffff !important;
   opacity: 1 !important;
+  font-family: 'CiscoSansTT', sans-serif !important;
 }
 
 input#email-input,
@@ -98,7 +102,7 @@ input[type="email"].email-input:focus {
   border-top: none !important;
   border-left: none !important;
   border-right: none !important;
-  border-bottom: 1px solid #fff !important;
+  border-bottom: 1px solid #D9D9D9 !important;
   border-radius: 0 !important;
 }
 
