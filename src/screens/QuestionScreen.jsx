@@ -9,13 +9,13 @@ export default function QuestionScreen({ onStart }) {
           srcSet="/img/CISCO@Desktop.png 2x"
           alt="Cisco"
           className="anim-fade-in question-cisco-logo"
-          style={{ height: 36, objectFit: "contain", marginBottom: 120 }}
+          style={{ height: 60, objectFit: "contain", marginBottom: 120 }}
         />
         <img
           src="/img/LWYW_brand_horizontal.png"
           alt="LWYW"
           className="anim-scale-in d1 question-lwyw-brand"
-          style={{ height: 40, objectFit: "contain", marginBottom: 120 }}
+          style={{ height: 60, objectFit: "contain", marginBottom: 120 }}
         />
         <h1 className="anim-slide-up d2 welcome-heading question-heading" style={{
           fontSize: 52, fontWeight: 300, color: "#fff",

@@ -9,7 +9,7 @@ export default function IntroScreen({ onNext }) {
           srcSet="/img/CISCO@Desktop.png 2x"
           alt="Cisco"
           className="anim-fade-in intro-cisco-logo"
-          style={{ height: 36, objectFit: "contain", marginBottom: 48 }}
+          style={{ height: 60, objectFit: "contain", marginBottom: 48 }}
         />
         <img
           src="/img/LWYW_brand_square.png"

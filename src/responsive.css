@@ -12,7 +12,7 @@
 
   /* ── Intro screen ── */
   .intro-cisco-logo {
-    height: 34px !important;
+    height: 44px !important;
     margin-bottom: 48 !important;
   }
 
@@ -33,12 +33,12 @@
 
   /* ── Question screen ── */
   .question-cisco-logo {
-    height: 34px !important;
+    height: 44px !important;
     margin-bottom: 100px !important;
   }
 
   .question-lwyw-brand {
-    height: 36px !important;
+    height: 46px !important;
     margin-bottom: 100px !important;
   }
 
@@ -51,12 +51,12 @@
 
   /* ── Email screen ── */
   .email-cisco-logo {
-    height: 34px !important;
+    height: 44px !important;
     margin-bottom: 100px !important;
   }
 
   .email-lwyw-brand {
-    height: 36px !important;
+    height: 46px !important;
     margin-bottom: 100px !important;
   }
 
@@ -66,8 +66,8 @@
 
   /* ── Buttons ── */
   .outline-btn {
-    min-width: 240px !important;
-    padding: 15px 36px !important;
+    min-width: 300px !important;
+    padding: 15px 50px !important;
     font-size: 14px !important;
   }
 
@@ -123,7 +123,7 @@
 
   /* ── Intro screen ── */
   .intro-cisco-logo {
-    height: 30px !important;
+    height: 40px !important;
     margin-bottom: 44px !important;
   }
 
@@ -146,12 +146,12 @@
 
   /* ── Question screen ── */
   .question-cisco-logo {
-    height: 30px !important;
+    height: 40px !important;
     margin-bottom: 80px !important;
   }
 
   .question-lwyw-brand {
-    height: 32px !important;
+    height: 42px !important;
     margin-bottom: 80px !important;
   }
 
@@ -164,12 +164,12 @@
 
   /* ── Email screen ── */
   .email-cisco-logo {
-    height: 30px !important;
+    height: 40px !important;
     margin-bottom: 80px !important;
   }
 
   .email-lwyw-brand {
-    height: 32px !important;
+    height: 42px !important;
     margin-bottom: 80px !important;
   }
 
@@ -186,8 +186,8 @@
   /* ── Buttons ── */
   .outline-btn,
   .filled-btn {
-    min-width: 220px !important;
-    padding: 14px 28px !important;
+    min-width: 280px !important;
+    padding: 14px 44px !important;
     font-size: 13px !important;
     letter-spacing: 0.14em !important;
     min-height: 48px !important;
@@ -293,7 +293,7 @@
   }
 
   .intro-cisco-logo {
-    height: 26px !important;
+    height: 36px !important;
     margin-bottom: 20px !important;
   }
 
@@ -312,22 +312,22 @@
   }
 
   .question-cisco-logo {
-    height: 26px !important;
+    height: 36px !important;
     margin-bottom: 60px !important;
   }
 
   .question-lwyw-brand {
-    height: 28px !important;
+    height: 38px !important;
     margin-bottom: 60px !important;
   }
 
   .email-cisco-logo {
-    height: 26px !important;
+    height: 36px !important;
     margin-bottom: 60px !important;
   }
 
   .email-lwyw-brand {
-    height: 28px !important;
+    height: 38px !important;
     margin-bottom: 60px !important;
   }
 
@@ -339,8 +339,8 @@
 
   .outline-btn,
   .filled-btn {
-    min-width: 200px !important;
-    padding: 13px 24px !important;
+    min-width: 240px !important;
+    padding: 13px 36px !important;
     font-size: 12px !important;
   }
 
@@ -397,7 +397,7 @@
   }
 
   .intro-cisco-logo {
-    height: 28px !important;
+    height: 38px !important;
     margin-bottom: 16px !important;
   }
 
@@ -417,22 +417,22 @@
   }
 
   .question-cisco-logo {
-    height: 28px !important;
+    height: 38px !important;
     margin-bottom: 40px !important;
   }
 
   .question-lwyw-brand {
-    height: 30px !important;
+    height: 40px !important;
     margin-bottom: 40px !important;
   }
 
   .email-cisco-logo {
-    height: 28px !important;
+    height: 38px !important;
     margin-bottom: 40px !important;
   }
 
   .email-lwyw-brand {
-    height: 30px !important;
+    height: 40px !important;
     margin-bottom: 40px !important;
   }
 

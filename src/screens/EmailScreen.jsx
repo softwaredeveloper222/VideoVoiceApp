@@ -23,7 +23,7 @@ export default function EmailScreen({ onNext, error: serverError }) {
           srcSet="/img/CISCO@Desktop.png 2x"
           alt="Cisco"
           className="anim-fade-in email-cisco-logo"
-          style={{ height: 36, objectFit: "contain", marginBottom: 120 }}
+          style={{ height: 60, objectFit: "contain", marginBottom: 120 }}
         />
 
         {/* LWYW horizontal brand */}
@@ -31,7 +31,7 @@ export default function EmailScreen({ onNext, error: serverError }) {
           src="/img/LWYW_brand_horizontal.png"
           alt="LWYW"
           className="anim-scale-in d1 email-lwyw-brand"
-          style={{ height: 40, objectFit: "contain", marginBottom: 120 }}
+          style={{ height: 60, objectFit: "contain", marginBottom: 120 }}
         />
 
         {/* Email input */}
