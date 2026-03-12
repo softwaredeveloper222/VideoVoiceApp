@@ -10,7 +10,7 @@ export default function SuccessScreen({ onReset }) {
           srcSet="/img/CISCO@2x.png 2x"
           alt="Cisco"
           className="anim-fade-in intro-cisco-logo"
-          style={{ height: 36, objectFit: "contain", marginBottom: 24 }}
+          style={{ height: 36, objectFit: "contain", marginBottom: 48 }}
         />
 
         {/* LWYW square brand */}

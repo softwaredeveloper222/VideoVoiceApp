@@ -14,7 +14,7 @@ export const styles = {
   // ── Background image screen (Intro & Question)
   bgImageScreen: {
     minHeight: "100vh",
-    background: "url('/img/Blue-AR-space@2x.png') center/cover no-repeat",
+    background: "url('/img/Blue-AR-space@2x.png') center/100% 100% no-repeat",
     display: "flex",
     flexDirection: "column",
     position: "relative",

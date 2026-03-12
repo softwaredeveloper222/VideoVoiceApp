@@ -9,7 +9,7 @@ export default function IntroScreen({ onNext }) {
           srcSet="/img/CISCO@2x.png 2x"
           alt="Cisco"
           className="anim-fade-in intro-cisco-logo"
-          style={{ height: 36, objectFit: "contain", marginBottom: 24 }}
+          style={{ height: 36, objectFit: "contain", marginBottom: 48 }}
         />
         <img
           src="/img/LWYW_brand_square.png"
@@ -36,7 +36,7 @@ export default function IntroScreen({ onNext }) {
         <button
           onClick={onNext}
           className="outline-btn anim-slide-up d5"
-          style={{ ...styles.outlineBtn, marginBottom: 40 }}
+          style={{ ...styles.outlineBtn, marginBottom: 16 }}
         >
           GET STARTED
         </button>
