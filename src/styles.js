@@ -662,7 +662,7 @@ export const styles = {
   },
   filledBtn: {
     display: "inline-flex", alignItems: "center", justifyContent: "center",
-    padding: "14px 28px", minWidth: 260,
+    padding: "16px 60px", minWidth: 340,
     background: "rgba(194,24,91,0.9)",
     border: "1.5px solid rgba(194,24,91,0.7)",
     borderRadius: 10,

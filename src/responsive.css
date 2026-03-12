@@ -186,11 +186,14 @@
   /* ── Buttons ── */
   .outline-btn,
   .filled-btn {
-    min-width: 280px !important;
-    padding: 14px 44px !important;
+    min-width: 0 !important;
+    width: calc(100% - 48px) !important;
+    max-width: 320px !important;
+    padding: 14px 24px !important;
     font-size: 13px !important;
     letter-spacing: 0.14em !important;
     min-height: 48px !important;
+    box-sizing: border-box !important;
   }
 
   .logo {
@@ -247,6 +250,7 @@
 
   .preview-btns button {
     width: 100% !important;
+    min-width: 0 !important;
     text-align: center;
     justify-content: center;
   }
@@ -339,8 +343,8 @@
 
   .outline-btn,
   .filled-btn {
-    min-width: 240px !important;
-    padding: 13px 36px !important;
+    min-width: 0 !important;
+    padding: 13px 20px !important;
     font-size: 12px !important;
   }
 
