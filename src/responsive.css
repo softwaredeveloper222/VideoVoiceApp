@@ -313,6 +313,9 @@
 
   .intro-description {
     font-size: 17px !important;
+    max-width: 260px !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
   }
 
   .question-cisco-logo {
@@ -335,10 +338,11 @@
     margin-bottom: 60px !important;
   }
 
-  .question-heading {
+    .question-heading {
     font-size: 28px !important;
+    max-width: 240px !important;
+    padding: 0 20px !important;
     line-height: 1.3 !important;
-    max-width: 290px !important;
   }
 
   .outline-btn,
@@ -362,8 +366,8 @@
   }
 
   .success-subtext {
-    font-size: 15px !important;
-    max-width: 270px !important;
+    font-size: 16px !important;
+    max-width: 240px !important;
   }
 }
 
