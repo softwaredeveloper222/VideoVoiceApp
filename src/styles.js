@@ -399,7 +399,7 @@ export const styles = {
   },
   viewBgBtnAbovePanel: {
     alignSelf: "center",
-    marginBottom: -2.2,
+    marginBottom: -2,
     boxShadow: "none",
     borderLeft: "2px solid white",
     borderRight: "2px solid white",
