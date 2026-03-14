@@ -35,7 +35,7 @@ export default function QuestionScreen({ onStart }) {
         <button
           onClick={onStart}
           className="outline-btn anim-slide-up d4"
-          style={{ ...styles.outlineBtn, marginBottom: 54 }}
+          style={{ ...styles.outlineBtn, marginBottom: 100 }}
         >
           RECORD YOUR ANSWER
         </button>

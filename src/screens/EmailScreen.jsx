@@ -91,7 +91,7 @@ placeholder="Please enter your email"
         <button
           onClick={handleSubmit}
           className="outline-btn anim-slide-up d3"
-          style={{ ...styles.outlineBtn, marginBottom: 54 }}
+          style={{ ...styles.outlineBtn, marginBottom: 100 }}
         >
           SUBMIT YOUR VIDEO
         </button>
