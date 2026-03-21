@@ -9,11 +9,10 @@ const SEG_WIDTH = 256;
 const SEG_HEIGHT = 144;
 
 const BACKGROUNDS = [
-  { id: "none", label: "None", type: "none", preview: "#ffffff" },
-  { id: "custom", label: "LWYW", type: "image", src: "/backgrounds/custom.png", preview: "linear-gradient(135deg, #c8956a, #f0ebe0)", crop: { top: 0, height: 0.47 } },
-  { id: "living-room", label: "Living Room", type: "image", src: "/backgrounds/living-room.jpg", preview: "linear-gradient(135deg, #c8956a, #f0ebe0)" },
-  { id: "home-office", label: "Home Office", type: "image", src: "/backgrounds/home-office.jpg", preview: "linear-gradient(135deg, #7a9ab0, #e8ecf0)" },
-  { id: "library", label: "Library", type: "image", src: "/backgrounds/library.jpg", preview: "linear-gradient(135deg, #7a5c3c, #c8a050)" },
+  { id: "none", label: "None", type: "none", card: "/card_img/none.png", preview: "#07182D" },
+  { id: "lwyw-1", label: "LWYW 1", type: "image", src: "/backgrounds/LWYW_1.png", card: "/card_img/LWYW_card_1.png", preview: "linear-gradient(135deg, #c8956a, #f0ebe0)" },
+  { id: "lwyw-2", label: "LWYW 2", type: "image", src: "/backgrounds/LWYW_2.png", card: "/card_img/LWYW_card_2.png", preview: "linear-gradient(135deg, #7a9ab0, #e8ecf0)" },
+  { id: "lwyw-3", label: "LWYW 3", type: "image", src: "/backgrounds/LWYW_3.png", card: "/card_img/LWYW_card_3.png", cardSize: "85%", preview: "linear-gradient(135deg, #7a5c3c, #c8a050)" },
   { id: "upload", label: "Custom", type: "upload", preview: "linear-gradient(135deg, #333, #666)" },
 ];
 
@@ -876,27 +875,24 @@ export default function RecordScreen({ onNext }) {
                       ...styles.bgThumb,
                       background: bg.id === "upload" && uploadedImage
                         ? `url(${uploadedImage.src}) center/cover`
+                        : bg.type === "none" && bg.card
+                        ? `${bg.preview} url(${bg.card}) center/50% no-repeat`
+                        : bg.card
+                        ? `url(${bg.card}) center/${bg.cardSize || "cover"} no-repeat`
                         : bg.type === "image" && bg.src
-                        ? bg.crop
-                          ? `url(${bg.src}) center top/cover`
-                          : `url(${bg.src}) center/cover`
+                        ? `url(${bg.src}) center/cover`
                         : bg.preview,
                       ...(selectedBg === bg.id ? styles.bgThumbActive : {}),
                     }}
                     className="bg-thumb"
                     title={bg.label}
                   >
-                    {bg.type === "none" && (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round">
-                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                    )}
                     {bg.type === "upload" && !uploadedImage && (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                       </svg>
                     )}
-                    <span style={styles.bgThumbLabel}>{bg.label}</span>
+                    {bg.type === "upload" && <span style={styles.bgThumbLabel}>{bg.label}</span>}
                   </button>
                 ))}
             </div>

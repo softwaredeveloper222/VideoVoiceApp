@@ -14,7 +14,7 @@ export const styles = {
   // ── Background image screen (Intro & Question)
   bgImageScreen: {
     minHeight: "100vh",
-    background: "url('/img/Blue-AR-space@2x.png') center/100% 100% no-repeat",
+    background: "url('/img/Blue-AR-space@2x.png') center/cover no-repeat",
     display: "flex",
     flexDirection: "column",
     position: "relative",
@@ -488,7 +488,7 @@ export const styles = {
     width: "100%",
   },
   bgThumb: {
-    width: 80, height: 52, borderRadius: 10,
+    width: 64, height: 64, borderRadius: 10,
     border: "2px solid rgba(255,255,255,0.12)",
     cursor: "pointer", padding: 0, flexShrink: 1, minWidth: 0,
     display: "flex", flexDirection: "column",
