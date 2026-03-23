@@ -4,8 +4,7 @@ import Logo from "../components/Logo";
 export default function UploadingScreen({ progress }) {
   const circumference = 2 * Math.PI * 28;
   return (
-    <div style={styles.gradientScreen} className="gradient-screen">
-      <div style={styles.gradientOverlay} />
+    <div style={styles.bgImageScreen} className="gradient-screen">
 
       <header style={styles.navBar} className="anim-fade-in nav-bar">
         <Logo />
