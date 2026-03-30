@@ -555,11 +555,9 @@ export default function RecordScreen({ onNext }) {
     (async () => {
       try {
         const isMobile = window.innerWidth <= 768;
-        const mobileW = Math.round(window.innerWidth * window.devicePixelRatio);
-        const mobileH = Math.round(window.innerHeight * window.devicePixelRatio);
         const stream = await navigator.mediaDevices.getUserMedia({
           video: isMobile
-            ? { width: { ideal: mobileW }, height: { ideal: mobileH }, facingMode: "user" }
+            ? { width: { ideal: 720 }, height: { ideal: 1280 }, facingMode: "user" }
             : { width: 1280, height: 720, facingMode: "user" },
           audio: true,
         });
