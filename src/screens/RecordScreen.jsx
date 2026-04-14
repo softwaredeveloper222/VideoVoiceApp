@@ -680,7 +680,8 @@ export default function RecordScreen({ onNext }) {
   const progress = (elapsed / MAX_DURATION) * 100;
   const timeLeft = MAX_DURATION - elapsed;
 
-  if (isLandscape && !isDesktop) {
+  const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  if (isLandscape && isTouchDevice) {
     return (
       <div style={{
         ...styles.cameraScreen,
