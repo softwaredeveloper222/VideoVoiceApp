@@ -680,7 +680,7 @@ export default function RecordScreen({ onNext }) {
   const progress = (elapsed / MAX_DURATION) * 100;
   const timeLeft = MAX_DURATION - elapsed;
 
-  if (isLandscape) {
+  if (isLandscape && !isDesktop) {
     return (
       <div style={{
         ...styles.cameraScreen,
@@ -708,7 +708,7 @@ export default function RecordScreen({ onNext }) {
       <div style={styles.cameraView} className="camera-view">
         <canvas ref={canvasRef} style={{ ...styles.cameraFeed, display: phase === "preview" ? "none" : "block" }} />
         {phase === "preview" && (
-          <video src={recordedUrl} style={styles.cameraFeed} controls autoPlay loop />
+          <video src={recordedUrl} style={styles.cameraFeed} controls={isDesktop} autoPlay loop playsInline />
         )}
 
         {cameraError && (
