@@ -95,43 +95,27 @@ uniform float u_lightWrapping;// background bleed onto person edge (0-1)
 uniform int u_blendMode;      // 0=Screen, 1=Linear dodge
 uniform int u_hasImageBg;     // 1 = image/upload bg (light wrap applies)
 uniform vec4 u_bgCover;       // xy = scale, zw = offset for cover crop
-uniform float u_subjectScale;  // >1.0 zooms out person only (1.0 = no change)
 in vec2 v_uv;
 out vec4 fragColor;
 
 void main() {
-  // Scale only vertically to zoom out person (mobile screens are taller than camera)
-  vec2 sUV = vec2(v_uv.x, (v_uv.y - 0.5) * u_subjectScale + 0.5);
-  bool inVideo = sUV.y >= 0.0 && sUV.y <= 1.0;
+  vec4 vid = texture(u_video, v_uv);
+  if (u_mode == 0) { fragColor = vid; return; }
 
-  if (u_mode == 0) {
-    fragColor = inVideo ? texture(u_video, sUV) : vec4(0.0, 0.0, 0.0, 1.0);
-    return;
-  }
-
-  // Background always at full screen (unscaled)
-  vec2 bgUV = v_uv * u_bgCover.xy + u_bgCover.zw;
-  vec4 bg = texture(u_bg, bgUV);
-
-  // Outside scaled video bounds → pure background
-  if (!inVideo) { fragColor = bg; return; }
-
-  // Sample video and masks at scaled UVs (person is smaller)
-  vec4 personVid = texture(u_video, sUV);
   const vec3 luma = vec3(0.299, 0.587, 0.114);
 
   // ── Pass 1: Joint Bilateral Upsampling ───
   float sigmaSpaceEff = u_sigmaSpace + u_edgeBlur * 1.5;
   float sigmaSq = max(0.01, sigmaSpaceEff * sigmaSpaceEff);
   float sigmaColorSq = max(0.0001, u_sigmaColor * u_sigmaColor);
-  float lumC  = dot(personVid.rgb, luma);
+  float lumC  = dot(vid.rgb, luma);
   float totalW = 0.0;
   float mRaw = 0.0, mBlend = 0.0;
   int r = (u_edgeBlur > 0.0) ? 2 : 1;
   for (int dy = -2; dy <= 2; dy++) {
     for (int dx = -2; dx <= 2; dx++) {
       if (abs(dx) > r || abs(dy) > r) continue;
-      vec2  mUV   = sUV + vec2(float(dx), float(dy)) * u_maskTexelSize;
+      vec2  mUV   = v_uv + vec2(float(dx), float(dy)) * u_maskTexelSize;
       float rawV  = texture(u_rawMask, mUV).r;
       float blndV = texture(u_mask,    mUV).r;
       float lumN  = dot(texture(u_video, mUV).rgb, luma);
@@ -153,10 +137,10 @@ void main() {
   float m = mix(mBlend, mRaw, clamp(0.25 + uncertainty * 1.5, 0.0, 1.0));
 
   // ── Pass 3: Full-resolution video-space edge snap (Sobel) ─────────────────
-  float lumR = dot(texture(u_video, sUV + vec2( u_texelSize.x, 0.0)).rgb, luma);
-  float lumL = dot(texture(u_video, sUV + vec2(-u_texelSize.x, 0.0)).rgb, luma);
-  float lumU = dot(texture(u_video, sUV + vec2(0.0,  u_texelSize.y)).rgb, luma);
-  float lumD = dot(texture(u_video, sUV + vec2(0.0, -u_texelSize.y)).rgb, luma);
+  float lumR = dot(texture(u_video, v_uv + vec2( u_texelSize.x, 0.0)).rgb, luma);
+  float lumL = dot(texture(u_video, v_uv + vec2(-u_texelSize.x, 0.0)).rgb, luma);
+  float lumU = dot(texture(u_video, v_uv + vec2(0.0,  u_texelSize.y)).rgb, luma);
+  float lumD = dot(texture(u_video, v_uv + vec2(0.0, -u_texelSize.y)).rgb, luma);
   float videoEdge = clamp(length(vec2(lumR - lumL, lumU - lumD)) * 7.0, 0.0, 1.0);
   float mSnap = step(0.5, m);
   float snapStrength = 0.85 * (1.0 - u_edgeBlur * 0.06);
@@ -165,7 +149,9 @@ void main() {
   // ── Coverage (smoothstep) — configurable for softer transition ─────────────
   m = smoothstep(u_coverage.x, u_coverage.y, m);
 
-  vec4 base = mix(bg, personVid, m);
+  vec2 bgUV = v_uv * u_bgCover.xy + u_bgCover.zw;
+  vec4 bg = texture(u_bg, bgUV);
+  vec4 base = mix(bg, vid, m);
 
   // ── Light wrapping (image/upload bg only): bleed bg onto person at edge ────
   if (u_hasImageBg == 1 && u_lightWrapping > 0.0) {
@@ -257,14 +243,12 @@ function initWebGL(gl) {
     u_blendMode: gl.getUniformLocation(program, "u_blendMode"),
     u_hasImageBg: gl.getUniformLocation(program, "u_hasImageBg"),
     u_bgCover: gl.getUniformLocation(program, "u_bgCover"),
-    u_subjectScale: gl.getUniformLocation(program, "u_subjectScale"),
   };
   gl.uniform1i(uniforms.u_video, 0);
   gl.uniform1i(uniforms.u_mask, 1);
   gl.uniform1i(uniforms.u_bg, 2);
   gl.uniform1i(uniforms.u_rawMask, 3);
   gl.uniform4f(uniforms.u_bgCover, 1.0, 1.0, 0.0, 0.0);
-  gl.uniform1f(uniforms.u_subjectScale, 1.0);
 
   const u_maskTexelSizeLoc = gl.getUniformLocation(program, "u_maskTexelSize");
   gl.uniform2f(u_maskTexelSizeLoc, 1.0 / SEG_WIDTH, 1.0 / SEG_HEIGHT);
@@ -336,36 +320,17 @@ function useBackgroundEffect(videoRef, canvasRef, selectedBg, segmenterRef, segm
       const curReady = segmenterReadyRef.current;
       const curUploaded = uploadedImageRef.current;
 
-      // On mobile, expand canvas to screen aspect so cover doesn't crop
-      const isMobile = window.innerWidth <= 768;
-      let cw = w, ch = h;
-      if (isMobile) {
-        const screenAspect = window.innerWidth / window.innerHeight;
-        const videoAspect = w / h;
-        if (screenAspect < videoAspect) {
-          // screen is taller → expand canvas height
-          ch = Math.round(w / screenAspect);
-        } else {
-          // screen is wider → expand canvas width
-          cw = Math.round(h * screenAspect);
-        }
-      }
-
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, r.textures.video);
-      if (lastDimsRef.current.w !== w || lastDimsRef.current.h !== h || lastDimsRef.current.cw !== cw || lastDimsRef.current.ch !== ch) {
-        canvas.width = cw;
-        canvas.height = ch;
-        gl.viewport(0, 0, cw, ch);
+      if (lastDimsRef.current.w !== w || lastDimsRef.current.h !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        gl.viewport(0, 0, w, h);
         gl.useProgram(r.program);
         gl.uniform2f(r.uniforms.u_texelSize, 1.0 / w, 1.0 / h);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-        // Scale Y to contain-fit video vertically inside taller canvas
-        gl.uniform1f(r.uniforms.u_subjectScale, ch / h);
-
-        lastDimsRef.current = { w, h, cw, ch };
-        lastBgKeyRef.current = null; // recalculate bg cover on resize
+        lastDimsRef.current = { w, h };
+        lastBgKeyRef.current = null;
       }
 
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, video);
@@ -435,8 +400,8 @@ function useBackgroundEffect(videoRef, canvasRef, selectedBg, segmenterRef, segm
         const img = bgImagesRef?.current?.[bg.id];
         if (img && lastBgKeyRef.current !== bg.id) {
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-          // Contain fit: bg covers full canvas (cw x ch)
-          const canvasAspect = cw / ch;
+          // Contain fit: bg covers full canvas
+          const canvasAspect = w / h;
           const bgAspect = img.naturalWidth / img.naturalHeight;
           let sx = 1, sy = 1, ox = 0, oy = 0;
           if (bgAspect > canvasAspect) {
@@ -453,7 +418,7 @@ function useBackgroundEffect(videoRef, canvasRef, selectedBg, segmenterRef, segm
         const key = "upload:" + curUploaded.src;
         if (lastBgKeyRef.current !== key) {
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, curUploaded);
-          const canvasAspect = cw / ch;
+          const canvasAspect = w / h;
           const bgAspect = curUploaded.naturalWidth / curUploaded.naturalHeight;
           let sx = 1, sy = 1, ox = 0, oy = 0;
           if (bgAspect > canvasAspect) {
@@ -588,11 +553,15 @@ export default function RecordScreen({ onNext }) {
     (async () => {
       try {
         const isMobile = window.innerWidth <= 768;
-        const mobileW = Math.round(window.innerWidth * window.devicePixelRatio);
-        const mobileH = Math.round(window.innerHeight * window.devicePixelRatio);
+        const screenAspect = window.innerHeight / window.innerWidth;
         const stream = await navigator.mediaDevices.getUserMedia({
           video: isMobile
-            ? { width: { ideal: mobileW }, height: { ideal: mobileH }, facingMode: "user" }
+            ? {
+                facingMode: "user",
+                aspectRatio: { ideal: screenAspect },
+                width: { ideal: 1080 },
+                height: { ideal: Math.round(1080 * screenAspect) },
+              }
             : { width: 1280, height: 720, facingMode: "user" },
           audio: true,
         });
