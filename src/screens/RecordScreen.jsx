@@ -99,7 +99,10 @@ in vec2 v_uv;
 out vec4 fragColor;
 
 void main() {
-  vec4 vid = texture(u_video, v_uv);
+  // Mirror video & mask sampling so the canvas (and recorded output) shows a selfie view.
+  // Background sampling intentionally stays in v_uv so virtual backgrounds aren't flipped.
+  vec2 videoUv = vec2(1.0 - v_uv.x, v_uv.y);
+  vec4 vid = texture(u_video, videoUv);
   if (u_mode == 0) { fragColor = vid; return; }
 
   const vec3 luma = vec3(0.299, 0.587, 0.114);
@@ -115,7 +118,7 @@ void main() {
   for (int dy = -2; dy <= 2; dy++) {
     for (int dx = -2; dx <= 2; dx++) {
       if (abs(dx) > r || abs(dy) > r) continue;
-      vec2  mUV   = v_uv + vec2(float(dx), float(dy)) * u_maskTexelSize;
+      vec2  mUV   = videoUv + vec2(float(dx), float(dy)) * u_maskTexelSize;
       float rawV  = texture(u_rawMask, mUV).r;
       float blndV = texture(u_mask,    mUV).r;
       float lumN  = dot(texture(u_video, mUV).rgb, luma);
@@ -137,10 +140,10 @@ void main() {
   float m = mix(mBlend, mRaw, clamp(0.25 + uncertainty * 1.5, 0.0, 1.0));
 
   // ── Pass 3: Full-resolution video-space edge snap (Sobel) ─────────────────
-  float lumR = dot(texture(u_video, v_uv + vec2( u_texelSize.x, 0.0)).rgb, luma);
-  float lumL = dot(texture(u_video, v_uv + vec2(-u_texelSize.x, 0.0)).rgb, luma);
-  float lumU = dot(texture(u_video, v_uv + vec2(0.0,  u_texelSize.y)).rgb, luma);
-  float lumD = dot(texture(u_video, v_uv + vec2(0.0, -u_texelSize.y)).rgb, luma);
+  float lumR = dot(texture(u_video, videoUv + vec2( u_texelSize.x, 0.0)).rgb, luma);
+  float lumL = dot(texture(u_video, videoUv + vec2(-u_texelSize.x, 0.0)).rgb, luma);
+  float lumU = dot(texture(u_video, videoUv + vec2(0.0,  u_texelSize.y)).rgb, luma);
+  float lumD = dot(texture(u_video, videoUv + vec2(0.0, -u_texelSize.y)).rgb, luma);
   float videoEdge = clamp(length(vec2(lumR - lumL, lumU - lumD)) * 7.0, 0.0, 1.0);
   float mSnap = step(0.5, m);
   float snapStrength = 0.85 * (1.0 - u_edgeBlur * 0.06);
@@ -707,7 +710,7 @@ export default function RecordScreen({ onNext }) {
 
       {/* Camera / preview canvas */}
       <div style={styles.cameraView} className="camera-view">
-        <canvas ref={canvasRef} style={{ ...styles.cameraFeed, display: phase === "preview" ? "none" : "block", transform: "scaleX(-1)" }} />
+        <canvas ref={canvasRef} style={{ ...styles.cameraFeed, display: phase === "preview" ? "none" : "block" }} />
         {phase === "preview" && (
           <video src={recordedUrl} style={styles.cameraFeed} controls={isDesktop} autoPlay loop playsInline />
         )}
