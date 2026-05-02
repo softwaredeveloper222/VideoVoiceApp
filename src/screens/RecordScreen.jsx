@@ -519,17 +519,59 @@ export default function RecordScreen({ onNext }) {
   const [postProcessAnimatingOut, setPostProcessAnimatingOut] = useState(false);
 
   const [recordBtnPressed, setRecordBtnPressed] = useState(false);
-  const [showBgPanel, setShowBgPanel] = useState(false);
-  const [bottomPanelAnimatingOut, setBottomPanelAnimatingOut] = useState(false);
   const [isDesktop, setIsDesktop] = useState(
     () => typeof window !== "undefined" && window.innerWidth > 768
   );
+  // Desktop-only: toggle BG panel visibility. On mobile the panel is always shown.
+  const [showBgPanel, setShowBgPanel] = useState(false);
+  const [bottomPanelAnimatingOut, setBottomPanelAnimatingOut] = useState(false);
+  const handleBottomPanelAnimEnd = (e) => {
+    if (e.animationName === "scrollFadeOut") {
+      setShowBgPanel(false);
+      setBottomPanelAnimatingOut(false);
+    }
+  };
+  const handleViewBgClick = () => {
+    if (showBgPanel) {
+      setBottomPanelAnimatingOut(true);
+    } else {
+      setShowBgPanel(true);
+    }
+  };
+  const [bgPanelHeight, setBgPanelHeight] = useState(0);
+  // Captures the panel's height during recording-phase content so preview can match it.
+  const [lockedPanelHeight, setLockedPanelHeight] = useState(0);
+  const bgPanelObserverRef = useRef(null);
+  const bgPanelRef = useCallback((el) => {
+    if (bgPanelObserverRef.current) {
+      bgPanelObserverRef.current.disconnect();
+      bgPanelObserverRef.current = null;
+    }
+    if (el) {
+      setBgPanelHeight(el.getBoundingClientRect().height);
+      if (typeof ResizeObserver !== "undefined") {
+        bgPanelObserverRef.current = new ResizeObserver(([entry]) => {
+          setBgPanelHeight(entry.contentRect.height);
+        });
+        bgPanelObserverRef.current.observe(el);
+      }
+    } else {
+      setBgPanelHeight(0);
+    }
+  }, []);
 
   useEffect(() => {
     const onResize = () => setIsDesktop(window.innerWidth > 768);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  // Capture the panel's height while showing recording-phase content so preview can match it.
+  useEffect(() => {
+    if (phase !== "preview" && bgPanelHeight > 0) {
+      setLockedPanelHeight(bgPanelHeight);
+    }
+  }, [phase, bgPanelHeight]);
 
   // Lock to portrait orientation on mobile
   useEffect(() => {
@@ -550,23 +592,6 @@ export default function RecordScreen({ onNext }) {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-
-  const handleBottomPanelHide = () => {
-    setBottomPanelAnimatingOut(true);
-  };
-  const handleBottomPanelAnimEnd = (e) => {
-    if (e.animationName === "scrollFadeOut") {
-      setShowBgPanel(false);
-      setBottomPanelAnimatingOut(false);
-    }
-  };
-  const handleViewBgClick = () => {
-    if (showBgPanel) {
-      handleBottomPanelHide();
-    } else {
-      setShowBgPanel(true);
-    }
-  };
 
   const bgImagesRef = useRef({});
   const { segmenterRef, segmenterReady, segmenterError } = useSegmenter();
@@ -709,7 +734,7 @@ export default function RecordScreen({ onNext }) {
       <video ref={videoRef} style={styles.hiddenVideo} muted playsInline />
 
       {/* Camera / preview canvas */}
-      <div style={styles.cameraView} className="camera-view">
+      <div style={{ ...styles.cameraView, ...(!isDesktop ? { bottom: bgPanelHeight } : {}) }} className="camera-view">
         <canvas ref={canvasRef} style={{ ...styles.cameraFeed, display: phase === "preview" ? "none" : "block" }} />
         {phase === "preview" && (
           <video src={recordedUrl} style={styles.cameraFeed} controls={isDesktop} autoPlay loop playsInline />
@@ -884,8 +909,118 @@ export default function RecordScreen({ onNext }) {
 
       </div>
 
-      {/* Virtual background — button + panel as one unit */}
-      {phase === "setup" && (
+      {/* Mobile: floating record button OUTSIDE the BG panel, just above it */}
+      {!isDesktop && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: bgPanelHeight + 8,
+            display: "flex",
+            justifyContent: "center",
+            zIndex: 11,
+            pointerEvents: "none",
+          }}
+        >
+          <div style={{ pointerEvents: "auto" }}>
+            {phase === "setup" && (
+              <button
+                onClick={() => {
+                  setRecordBtnPressed(true);
+                  setTimeout(() => {
+                    setRecordBtnPressed(false);
+                    startCountdown();
+                  }, 350);
+                }}
+                disabled={!cameraReady || recordBtnPressed}
+                style={{ ...styles.recordBtn, opacity: cameraReady ? 1 : 0.4 }}
+                className={`record-btn${recordBtnPressed ? " record-btn-pressed" : ""}`}
+                aria-label="Start recording"
+              >
+                <span style={styles.recordDot} />
+              </button>
+            )}
+            {phase === "countdown" && (
+              <button style={{ ...styles.recordBtn, opacity: 0.4 }} className="record-btn" disabled aria-label="Preparing…">
+                <span style={styles.recordDot} />
+              </button>
+            )}
+            {phase === "recording" && (
+              <button onClick={stopRecording} style={{ ...styles.recordBtn, ...styles.recordBtnActive }} className="record-btn" aria-label="Stop recording">
+                <span style={styles.stopSquare} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile: BG panel stays visible through every phase. In preview it holds only Retake + Use This. */}
+      {!isDesktop && (
+        <div ref={bgPanelRef} style={styles.bottomAreaExpanded} className="bottom-area-expanded">
+          <div
+            style={{
+              ...styles.bottomPanelExpandedOnly,
+              ...(phase === "preview" && lockedPanelHeight > 0
+                ? { minHeight: lockedPanelHeight, display: "flex", alignItems: "center", justifyContent: "center" }
+                : {}),
+            }}
+            className="bottom-panel"
+          >
+            {phase === "preview" ? (
+              <div style={styles.previewBtns} className="preview-btns anim-slide-up">
+                <button onClick={retake} style={styles.outlineBtn} className="outline-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 7 }}>
+                    <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+                  </svg>
+                  Retake
+                </button>
+                <button onClick={() => onNext(recordedBlob)} style={styles.filledBtn} className="filled-btn">
+                  Use This
+                  <svg style={{ marginLeft: 8 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <div style={styles.bgSection} className="bg-section">
+                <p style={{ ...styles.bgTitle, marginBottom: 14, textAlign: "center" }}>
+                  Choose your background
+                  {!segmenterReady && !segmenterError && (
+                    <span style={styles.segmenterLoadingText}> · loading AI…</span>
+                  )}
+                </p>
+                <div style={styles.bgThumbs} className="bg-thumbs">
+                  {BACKGROUNDS.map((bg) => (
+                    <button
+                      key={bg.id}
+                      onClick={() => setSelectedBg(bg.id)}
+                      style={{
+                        ...styles.bgThumb,
+                        background: bg.type === "none" && bg.card
+                          ? `${bg.preview} url(${bg.card}) center/50% no-repeat`
+                          : bg.id === "lwyw-1" && isDesktop && bg.card
+                          ? `url(${bg.card}) center 72% / ${bg.cardSize || "cover"} no-repeat`
+                          : bg.card
+                          ? `url(${bg.card}) center/${bg.cardSize || "cover"} no-repeat`
+                          : bg.type === "image" && bg.src
+                          ? `url(${bg.src}) center/cover`
+                          : bg.preview,
+                        ...(selectedBg === bg.id ? styles.bgThumbActive : {}),
+                      }}
+                      className="bg-thumb"
+                      title={bg.label}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Desktop: original toggle-based BG panel */}
+      {isDesktop && phase === "setup" && (
         <div
           style={styles.bottomAreaExpanded}
           className={`bottom-area-expanded${showBgPanel && !bottomPanelAnimatingOut ? " anim-scroll-fade-in" : ""}${bottomPanelAnimatingOut ? " anim-scroll-fade-out" : ""}`}
@@ -902,45 +1037,45 @@ export default function RecordScreen({ onNext }) {
             <img src="/img/virtual_background_button_img.png" alt="Virtual Background" style={{ width: 24, height: 24, objectFit: "contain" }} />
           </button>
           {(showBgPanel || bottomPanelAnimatingOut) && (
-          <div style={styles.bottomPanelExpandedOnly} className="bottom-panel">
-            <div style={styles.bgSection} className="bg-section">
-            <p style={{ ...styles.bgTitle, marginBottom: 14, textAlign: "center" }}>
-              Choose your background
-              {!segmenterReady && !segmenterError && (
-                <span style={styles.segmenterLoadingText}> · loading AI…</span>
-              )}
-            </p>
-            <div style={styles.bgThumbs} className="bg-thumbs">
-              {BACKGROUNDS.map((bg) => (
-                  <button
-                    key={bg.id}
-                    onClick={() => setSelectedBg(bg.id)}
-                    style={{
-                      ...styles.bgThumb,
-                      background: bg.type === "none" && bg.card
-                        ? `${bg.preview} url(${bg.card}) center/50% no-repeat`
-                        : bg.id === "lwyw-1" && isDesktop && bg.card
-                        ? `url(${bg.card}) center 72% / ${bg.cardSize || "cover"} no-repeat`
-                        : bg.card
-                        ? `url(${bg.card}) center/${bg.cardSize || "cover"} no-repeat`
-                        : bg.type === "image" && bg.src
-                        ? `url(${bg.src}) center/cover`
-                        : bg.preview,
-                      ...(selectedBg === bg.id ? styles.bgThumbActive : {}),
-                    }}
-                    className="bg-thumb"
-                    title={bg.label}
-                  >
-                  </button>
-                ))}
+            <div style={styles.bottomPanelExpandedOnly} className="bottom-panel">
+              <div style={styles.bgSection} className="bg-section">
+                <p style={{ ...styles.bgTitle, marginBottom: 14, textAlign: "center" }}>
+                  Choose your background
+                  {!segmenterReady && !segmenterError && (
+                    <span style={styles.segmenterLoadingText}> · loading AI…</span>
+                  )}
+                </p>
+                <div style={styles.bgThumbs} className="bg-thumbs">
+                  {BACKGROUNDS.map((bg) => (
+                    <button
+                      key={bg.id}
+                      onClick={() => setSelectedBg(bg.id)}
+                      style={{
+                        ...styles.bgThumb,
+                        background: bg.type === "none" && bg.card
+                          ? `${bg.preview} url(${bg.card}) center/50% no-repeat`
+                          : bg.id === "lwyw-1" && isDesktop && bg.card
+                          ? `url(${bg.card}) center 72% / ${bg.cardSize || "cover"} no-repeat`
+                          : bg.card
+                          ? `url(${bg.card}) center/${bg.cardSize || "cover"} no-repeat`
+                          : bg.type === "image" && bg.src
+                          ? `url(${bg.src}) center/cover`
+                          : bg.preview,
+                        ...(selectedBg === bg.id ? styles.bgThumbActive : {}),
+                      }}
+                      className="bg-thumb"
+                      title={bg.label}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
-            </div>
-          </div>
           )}
         </div>
       )}
 
-      {/* Controls row — record button + View Virtual Background (when collapsed); countdown/recording/preview */}
+      {/* Desktop: record button at the bottom (original bottomPanelCollapsed) */}
+      {isDesktop && (
         <div
           style={{
             ...styles.bottomPanel,
@@ -950,58 +1085,53 @@ export default function RecordScreen({ onNext }) {
           }}
           className={`bottom-panel${phase !== "preview" ? " bottom-panel-with-bg-btn" : ""}`}
         >
-        <div
-          style={{
-            ...styles.controlsRow,
-            ...styles.controlsRowColumn,
-          }}
-          className="controls-row"
-        >
-          {phase === "setup" && (
-            <button
-              onClick={() => {
-                setRecordBtnPressed(true);
-                setTimeout(() => {
-                  setRecordBtnPressed(false);
-                  startCountdown();
-                }, 350);
-              }}
-              disabled={!cameraReady || recordBtnPressed}
-              style={{ ...styles.recordBtn, opacity: cameraReady ? 1 : 0.4 }}
-              className={`record-btn${recordBtnPressed ? " record-btn-pressed" : ""}`}
-              aria-label="Start recording"
-            >
-              <span style={styles.recordDot} />
-            </button>
-          )}
-          {phase === "countdown" && (
+          <div style={{ ...styles.controlsRow, ...styles.controlsRowColumn }} className="controls-row">
+            {phase === "setup" && (
+              <button
+                onClick={() => {
+                  setRecordBtnPressed(true);
+                  setTimeout(() => {
+                    setRecordBtnPressed(false);
+                    startCountdown();
+                  }, 350);
+                }}
+                disabled={!cameraReady || recordBtnPressed}
+                style={{ ...styles.recordBtn, opacity: cameraReady ? 1 : 0.4 }}
+                className={`record-btn${recordBtnPressed ? " record-btn-pressed" : ""}`}
+                aria-label="Start recording"
+              >
+                <span style={styles.recordDot} />
+              </button>
+            )}
+            {phase === "countdown" && (
               <button style={{ ...styles.recordBtn, opacity: 0.4 }} className="record-btn" disabled aria-label="Preparing…">
                 <span style={styles.recordDot} />
               </button>
-          )}
-          {phase === "recording" && (
+            )}
+            {phase === "recording" && (
               <button onClick={stopRecording} style={{ ...styles.recordBtn, ...styles.recordBtnActive }} className="record-btn" aria-label="Stop recording">
                 <span style={styles.stopSquare} />
               </button>
-          )}
-          {phase === "preview" && (
-            <div style={styles.previewBtns} className="preview-btns anim-slide-up">
-              <button onClick={retake} style={styles.outlineBtn} className="outline-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 7 }}>
-                  <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
-                </svg>
-                Retake
-              </button>
-              <button onClick={() => onNext(recordedBlob)} style={styles.filledBtn} className="filled-btn">
-                Use This
-                <svg style={{ marginLeft: 8 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                </svg>
-              </button>
-            </div>
-          )}
+            )}
+            {phase === "preview" && (
+              <div style={styles.previewBtns} className="preview-btns anim-slide-up">
+                <button onClick={retake} style={styles.outlineBtn} className="outline-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 7 }}>
+                    <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+                  </svg>
+                  Retake
+                </button>
+                <button onClick={() => onNext(recordedBlob)} style={styles.filledBtn} className="filled-btn">
+                  Use This
+                  <svg style={{ marginLeft: 8 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-        </div>
+      )}
 
 
     </div>
