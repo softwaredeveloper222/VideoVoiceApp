@@ -1,485 +1,413 @@
 /* ─── Mobile Responsive ──────────────────────────────────── */
 
+
 /* ══════════════════════════════════════════════════════════
    TABLET  (max-width: 768px)
    ══════════════════════════════════════════════════════════ */
+
 @media (max-width: 768px) {
-
-  /* Welcome center (Intro / Question / Email) */
-  .welcome-center {
-    padding: 0px 24px 0px !important;
-  }
-
-  /* ── Intro screen ── */
-  .intro-cisco-logo {
-    height: 44px !important;
-    margin-bottom: 48 !important;
-  }
-
-  .intro-lwyw-brand {
-    width: min(380px, 65vw) !important;
-    margin-bottom: 24px !important;
-  }
-
-  .intro-hashtags {
-    font-size: 19px !important;
-    margin-bottom: 14px !important;
-  }
-
-  .intro-description {
-    font-size: 24px !important;
-    margin-bottom: 0 !important;
-  }
-
-  /* ── Question screen ── */
-  .question-cisco-logo {
-    height: 44px !important;
-    margin-bottom: 100px !important;
-  }
-
-  .question-lwyw-brand {
-    height: 46px !important;
-    margin-bottom: 100px !important;
-  }
-
-  .question-heading {
-    font-size: 48px !important;
-    max-width: 380px !important;
-    padding: 0 20px !important;
-    line-height: 1.3 !important;
-  }
-
-  /* ── Email screen ── */
-  .email-cisco-logo {
-    height: 44px !important;
-    margin-bottom: 100px !important;
-  }
-
-  .email-lwyw-brand {
-    height: 46px !important;
-    margin-bottom: 100px !important;
-  }
-
-  .email-input-wrap {
-    max-width: 300px !important;
-  }
-
-  .email-input::placeholder {
-    font-size: 18px !important;
-    font-weight: 300 !important;
-  }
-
-  /* ── Buttons ── */
-  .outline-btn {
-    min-width: 300px !important;
-    padding: 15px 50px !important;
-    font-size: 14px !important;
-  }
-
-  /* ── Record screen ── */
-  .countdown-num {
-    font-size: 80px !important;
-  }
-
-  .bg-thumbs {
-    gap: 8px !important;
-    padding: 6px 4px !important;
-  }
-
-  .bg-thumb {
-    width: 60px !important;
-    height: 60px !important;
-  }
-
-  /* ── Upload screen ── */
-  .progress-ring-wrap svg {
-    width: 80px !important;
-    height: 80px !important;
-  }
-
-  .upload-title {
-    font-size: 22px !important;
-  }
-
-  /* ── Success screen ── */
-  .success-lwyw-brand {
-    margin-bottom: 64px !important;
-  }
-
-  .success-title {
-    font-size: 64px !important;
-  }
-
-  .success-subtext {
-    font-size: 22px !important;
-    max-width: 330px !important;
-  }
+    /* Welcome center (Intro / Question / Email) */
+    .welcome-center {
+        padding: 0px 24px 0px !important;
+    }
+    /* ── Intro screen ── */
+    .intro-cisco-logo {
+        height: 44px !important;
+        margin-bottom: 48 !important;
+    }
+    .intro-lwyw-brand {
+        width: min(380px, 65vw) !important;
+        margin-bottom: 24px !important;
+    }
+    .intro-hashtags {
+        font-size: 19px !important;
+        margin-bottom: 14px !important;
+    }
+    .intro-description {
+        font-size: 24px !important;
+        margin-bottom: 0 !important;
+    }
+    /* ── Question screen ── */
+    .question-cisco-logo {
+        height: 44px !important;
+        margin-bottom: 100px !important;
+    }
+    .question-lwyw-brand {
+        height: 46px !important;
+        margin-bottom: 100px !important;
+    }
+    .question-heading {
+        font-size: 48px !important;
+        max-width: 380px !important;
+        padding: 0 20px !important;
+        line-height: 1.3 !important;
+    }
+    /* ── Email screen ── */
+    .email-cisco-logo {
+        height: 44px !important;
+        margin-bottom: 100px !important;
+    }
+    .email-lwyw-brand {
+        height: 46px !important;
+        margin-bottom: 100px !important;
+    }
+    .email-input-wrap {
+        max-width: 300px !important;
+    }
+    .email-input::placeholder {
+        font-size: 18px !important;
+        font-weight: 300 !important;
+    }
+    /* ── Buttons ── */
+    .outline-btn {
+        min-width: 300px !important;
+        padding: 15px 50px !important;
+        font-size: 14px !important;
+    }
+    /* ── Record screen ── */
+    .countdown-num {
+        font-size: 80px !important;
+    }
+    /* .bg-thumbs {
+        gap: 8px !important;
+        padding: 6px 4px !important;
+    }
+    .bg-thumb {
+        width: 60px !important;
+        height: 60px !important;
+    } */
+    /* ── Upload screen ── */
+    .progress-ring-wrap svg {
+        width: 80px !important;
+        height: 80px !important;
+    }
+    .upload-title {
+        font-size: 22px !important;
+    }
+    /* ── Success screen ── */
+    .success-lwyw-brand {
+        margin-bottom: 64px !important;
+    }
+    .success-title {
+        font-size: 64px !important;
+    }
+    .success-subtext {
+        font-size: 22px !important;
+        max-width: 330px !important;
+    }
 }
+
 
 /* ══════════════════════════════════════════════════════════
    PHONE  (max-width: 480px)
    ══════════════════════════════════════════════════════════ */
+
 @media (max-width: 480px) {
-
-  /* Welcome center */
-  .welcome-center {
-    padding: 0px 24px 0px !important;
-  }
-
-  /* ── Intro screen ── */
-  .intro-cisco-logo {
-    height: 40px !important;
-    margin-bottom: 44px !important;
-  }
-
-  .intro-lwyw-brand {
-    width: min(280px, 77vw) !important;
-    margin-bottom: 20px !important;
-  }
-
-  .intro-hashtags {
-    font-size: 19px !important;
-    margin-bottom: 14px !important;
-  }
-
-  .intro-description {
-    font-size: 19px !important;
-    max-width: 280px !important;
-    margin-bottom: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* ── Question screen ── */
-  .question-cisco-logo {
-    height: 40px !important;
-    margin-bottom: 80px !important;
-  }
-
-  .question-lwyw-brand {
-    height: 42px !important;
-    margin-bottom: 80px !important;
-  }
-
-  .question-heading {
-    font-size: 38px !important;
-    max-width: 300px !important;
-    padding: 0 20px !important;
-    line-height: 1.3 !important;
-  }
-
-  /* ── Email screen ── */
-  .email-cisco-logo {
-    height: 40px !important;
-    margin-bottom: 80px !important;
-  }
-
-  .email-lwyw-brand {
-    height: 42px !important;
-    margin-bottom: 80px !important;
-  }
-
-  .email-input-wrap {
-    max-width: 280px !important;
-    padding: 0 12px !important;
-  }
-
-  .email-input {
-    padding: 12px 14px !important;
-    font-size: 14px !important;
-  }
-
-  .email-input::placeholder {
-    font-size: 16px !important;
-    font-weight: 300 !important;
-  }
-
-  /* ── Buttons ── */
-  .outline-btn,
-  .filled-btn {
-    min-width: 0 !important;
-    width: calc(100% - 120px) !important;
-    /* max-width: 320px !important; */
-    padding: 14px 24px !important;
-    font-size: 13px !important;
-    letter-spacing: 0.03em !important;
-    min-height: 48px !important;
-    box-sizing: border-box !important;
-  }
-
-  .logo {
-    margin-bottom: 0 !important;
-  }
-
-  /* ── Nav bar ── */
-  .nav-bar {
-    padding: 16px 20px !important;
-  }
-
-  /* ── Record screen ── */
-  .camera-screen {
-    height: 100dvh !important;
-  }
-
-  .bottom-panel {
-    padding: 14px 20px calc(28px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  .bg-section {
-    margin-bottom: 16px !important;
-  }
-
-  .bg-thumbs {
-    gap: 6px !important;
-    padding: 6px 4px !important;
-  }
-
-  .bg-thumb {
-    width: 52px !important;
-    height: 52px !important;
-    border-radius: 8px !important;
-  }
-
-  .record-btn {
-    width: 64px !important;
-    height: 64px !important;
-  }
-
-  .record-btn span:first-child {
-    width: 44px !important;
-    height: 44px !important;
-  }
-
-  .countdown-num {
-    font-size: 64px !important;
-  }
-
-  .preview-btns {
-    flex-direction: column !important;
-    gap: 10px !important;
-  }
-
-  .preview-btns button {
-    width: 100% !important;
-    min-width: 0 !important;
-    text-align: center;
-    justify-content: center;
-  }
-
-  /* ── Upload screen ── */
-  .progress-ring-wrap svg {
-    width: 72px !important;
-    height: 72px !important;
-  }
-
-  .progress-pct {
-    font-size: 16px !important;
-  }
-
-  .upload-title {
-    font-size: 20px !important;
-  }
-
-  .upload-text {
-    font-size: 14px !important;
-  }
-
-  /* ── Success screen ── */
-  .success-lwyw-brand {
-    margin-bottom: 56px !important;
-  }
-
-  .success-title {
-    font-size: 48px !important;
-  }
-
-  .success-subtext {
-    font-size: 20px !important;
-    max-width: 320px !important;
-  }
+    /* Welcome center */
+    .welcome-center {
+        padding: 0px 24px 0px !important;
+    }
+    /* ── Intro screen ── */
+    .intro-cisco-logo {
+        height: 40px !important;
+        margin-bottom: 44px !important;
+    }
+    .intro-lwyw-brand {
+        width: min(280px, 77vw) !important;
+        margin-bottom: 20px !important;
+    }
+    .intro-hashtags {
+        font-size: 19px !important;
+        margin-bottom: 14px !important;
+    }
+    .intro-description {
+        font-size: 19px !important;
+        max-width: 280px !important;
+        margin-bottom: 0 !important;
+        padding: 0 !important;
+    }
+    /* ── Question screen ── */
+    .question-cisco-logo {
+        height: 40px !important;
+        margin-bottom: 80px !important;
+    }
+    .question-lwyw-brand {
+        height: 42px !important;
+        margin-bottom: 80px !important;
+    }
+    .question-heading {
+        font-size: 38px !important;
+        max-width: 300px !important;
+        padding: 0 20px !important;
+        line-height: 1.3 !important;
+    }
+    /* ── Email screen ── */
+    .email-cisco-logo {
+        height: 40px !important;
+        margin-bottom: 80px !important;
+    }
+    .email-lwyw-brand {
+        height: 42px !important;
+        margin-bottom: 80px !important;
+    }
+    .email-input-wrap {
+        max-width: 280px !important;
+        padding: 0 12px !important;
+    }
+    .email-input {
+        padding: 12px 14px !important;
+        font-size: 14px !important;
+    }
+    .email-input::placeholder {
+        font-size: 16px !important;
+        font-weight: 300 !important;
+    }
+    /* ── Buttons ── */
+    .outline-btn,
+    .filled-btn {
+        min-width: 0 !important;
+        width: calc(100% - 120px) !important;
+        /* max-width: 320px !important; */
+        padding: 14px 24px !important;
+        font-size: 13px !important;
+        letter-spacing: 0.03em !important;
+        min-height: 48px !important;
+        box-sizing: border-box !important;
+    }
+    .logo {
+        margin-bottom: 0 !important;
+    }
+    /* ── Nav bar ── */
+    .nav-bar {
+        padding: 16px 20px !important;
+    }
+    /* ── Record screen ── */
+    .camera-screen {
+        height: 100dvh !important;
+    }
+    .bottom-panel {
+        padding: 14px 20px calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    .bg-section {
+        margin-bottom: 16px !important;
+    }
+    /* .bg-thumbs { */
+    /* gap: 12px !important; */
+    /* padding: 6px 4px !important; */
+    /* } */
+    /* .bg-thumb { */
+    /* width: 52px !important;
+    height: 52px !important; */
+    /* border-radius: 8px !important; */
+    /* } */
+    .record-btn {
+        width: 64px !important;
+        height: 64px !important;
+    }
+    .record-btn span:first-child {
+        width: 44px !important;
+        height: 44px !important;
+    }
+    .countdown-num {
+        font-size: 64px !important;
+    }
+    .preview-btns {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    .preview-btns button {
+        width: 100% !important;
+        min-width: 0 !important;
+        text-align: center;
+        justify-content: center;
+    }
+    /* ── Upload screen ── */
+    .progress-ring-wrap svg {
+        width: 72px !important;
+        height: 72px !important;
+    }
+    .progress-pct {
+        font-size: 16px !important;
+    }
+    .upload-title {
+        font-size: 20px !important;
+    }
+    .upload-text {
+        font-size: 14px !important;
+    }
+    /* ── Success screen ── */
+    .success-lwyw-brand {
+        margin-bottom: 56px !important;
+    }
+    .success-title {
+        font-size: 48px !important;
+    }
+    .success-subtext {
+        font-size: 20px !important;
+        max-width: 320px !important;
+    }
 }
+
 
 /* ══════════════════════════════════════════════════════════
    SMALL PHONE  (max-width: 360px)
    ══════════════════════════════════════════════════════════ */
+
 @media (max-width: 360px) {
-  .welcome-center {
-    padding: 0px 36px 0px !important;
-  }
-
-  .intro-cisco-logo {
-    height: 36px !important;
-    margin-bottom: 20px !important;
-  }
-
-  .intro-lwyw-brand {
-    width: min(220px, 65vw) !important;
-    margin-bottom: 16px !important;
-  }
-
-  .intro-hashtags {
-    font-size: 17px !important;
-    margin-bottom: 10px !important;
-  }
-
-  .intro-description {
-    font-size: 17px !important;
-    max-width: 260px !important;
-    margin-bottom: 0 !important;
-    padding: 0 !important;
-  }
-
-  .question-cisco-logo {
-    height: 36px !important;
-    margin-bottom: 60px !important;
-  }
-
-  .question-lwyw-brand {
-    height: 38px !important;
-    margin-bottom: 60px !important;
-  }
-
-  .email-cisco-logo {
-    height: 36px !important;
-    margin-bottom: 60px !important;
-  }
-
-  .email-lwyw-brand {
-    height: 38px !important;
-    margin-bottom: 60px !important;
-  }
-
+    .welcome-center {
+        padding: 0px 36px 0px !important;
+    }
+    .intro-cisco-logo {
+        height: 36px !important;
+        margin-bottom: 20px !important;
+    }
+    .intro-lwyw-brand {
+        width: min(220px, 65vw) !important;
+        margin-bottom: 16px !important;
+    }
+    .intro-hashtags {
+        font-size: 17px !important;
+        margin-bottom: 10px !important;
+    }
+    .intro-description {
+        font-size: 17px !important;
+        max-width: 260px !important;
+        margin-bottom: 0 !important;
+        padding: 0 !important;
+    }
+    .question-cisco-logo {
+        height: 36px !important;
+        margin-bottom: 60px !important;
+    }
+    .question-lwyw-brand {
+        height: 38px !important;
+        margin-bottom: 60px !important;
+    }
+    .email-cisco-logo {
+        height: 36px !important;
+        margin-bottom: 60px !important;
+    }
+    .email-lwyw-brand {
+        height: 38px !important;
+        margin-bottom: 60px !important;
+    }
     .question-heading {
-    font-size: 28px !important;
-    max-width: 240px !important;
-    padding: 0 20px !important;
-    line-height: 1.3 !important;
-  }
-
-  .outline-btn,
-  .filled-btn {
-    width: calc(100% - 48px) !important;
-    /* min-width: 240px !important; */
-    padding: 13px 36px !important;
-    font-size: 12px !important;
-  }
-
-  .email-input-wrap {
-    max-width: 240px !important;
-  }
-
-  .email-input::placeholder {
-    font-size: 14px !important;
-    font-weight: 300 !important;
-  }
-
-  .success-lwyw-brand {
-    margin-bottom: 44px !important;
-  }
-
-  .success-title {
-    font-size: 34px !important;
-  }
-
-  .success-subtext {
-    font-size: 16px !important;
-    max-width: 240px !important;
-  }
+        font-size: 28px !important;
+        max-width: 240px !important;
+        padding: 0 20px !important;
+        line-height: 1.3 !important;
+    }
+    .outline-btn,
+    .filled-btn {
+        width: calc(100% - 48px) !important;
+        /* min-width: 240px !important; */
+        padding: 13px 36px !important;
+        font-size: 12px !important;
+    }
+    .email-input-wrap {
+        max-width: 240px !important;
+    }
+    .email-input::placeholder {
+        font-size: 14px !important;
+        font-weight: 300 !important;
+    }
+    .success-lwyw-brand {
+        margin-bottom: 44px !important;
+    }
+    .success-title {
+        font-size: 34px !important;
+    }
+    .success-subtext {
+        font-size: 16px !important;
+        max-width: 240px !important;
+    }
 }
+
 
 /* ── Bottom panel with bg button: consistent spacing ── */
+
 .bottom-panel.bottom-panel-with-bg-btn {
-  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
 }
+
 
 /* ══════════════════════════════════════════════════════════
    TOUCH DEVICES
    ══════════════════════════════════════════════════════════ */
+
 @media (hover: none) and (pointer: coarse) {
-  .outline-btn,
-  .filled-btn,
-  .record-btn,
-  .bg-thumb {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .outline-btn:active,
-  .filled-btn:active {
-    transform: scale(0.97);
-  }
-
-  .record-btn:active {
-    transform: scale(0.94);
-  }
+    .outline-btn,
+    .filled-btn,
+    .record-btn,
+    .bg-thumb {
+        -webkit-tap-highlight-color: transparent;
+    }
+    .outline-btn:active,
+    .filled-btn:active {
+        transform: scale(0.97);
+    }
+    .record-btn:active {
+        transform: scale(0.94);
+    }
 }
+
 
 /* ══════════════════════════════════════════════════════════
    LANDSCAPE on small devices
    ══════════════════════════════════════════════════════════ */
+
 @media (max-height: 500px) and (orientation: landscape) {
-  .welcome-center {
-    padding: 0px 16px 0px !important;
-  }
-
-  .intro-cisco-logo {
-    height: 38px !important;
-    margin-bottom: 16px !important;
-  }
-
-  .intro-lwyw-brand {
-    width: min(140px, 34vw) !important;
-    margin-bottom: 10px !important;
-  }
-
-  .intro-hashtags {
-    font-size: 12px !important;
-    margin-bottom: 6px !important;
-  }
-
-  .intro-description {
-    font-size: 14px !important;
-    margin-bottom: 0 !important;
-  }
-
-  .question-cisco-logo {
-    height: 38px !important;
-    margin-bottom: 40px !important;
-  }
-
-  .question-lwyw-brand {
-    height: 40px !important;
-    margin-bottom: 40px !important;
-  }
-
-  .email-cisco-logo {
-    height: 38px !important;
-    margin-bottom: 40px !important;
-  }
-
-  .email-lwyw-brand {
-    height: 40px !important;
-    margin-bottom: 40px !important;
-  }
-
-  .email-input::placeholder {
-    font-size: 13px !important;
-    font-weight: 300 !important;
-  }
-
-  .question-heading {
-    font-size: 26px !important;
-    line-height: 1.3 !important;
-  }
-
-  .success-lwyw-brand {
-    margin-bottom: 28px !important;
-  }
-
-  .success-title {
-    font-size: 22px !important;
-  }
-
-  .success-subtext {
-    font-size: 17px !important;
-    max-width: 270px !important;
-  }
+    .welcome-center {
+        padding: 0px 16px 0px !important;
+    }
+    .intro-cisco-logo {
+        height: 38px !important;
+        margin-bottom: 16px !important;
+    }
+    .intro-lwyw-brand {
+        width: min(140px, 34vw) !important;
+        margin-bottom: 10px !important;
+    }
+    .intro-hashtags {
+        font-size: 12px !important;
+        margin-bottom: 6px !important;
+    }
+    .intro-description {
+        font-size: 14px !important;
+        margin-bottom: 0 !important;
+    }
+    .question-cisco-logo {
+        height: 38px !important;
+        margin-bottom: 40px !important;
+    }
+    .question-lwyw-brand {
+        height: 40px !important;
+        margin-bottom: 40px !important;
+    }
+    .email-cisco-logo {
+        height: 38px !important;
+        margin-bottom: 40px !important;
+    }
+    .email-lwyw-brand {
+        height: 40px !important;
+        margin-bottom: 40px !important;
+    }
+    .email-input::placeholder {
+        font-size: 13px !important;
+        font-weight: 300 !important;
+    }
+    .question-heading {
+        font-size: 26px !important;
+        line-height: 1.3 !important;
+    }
+    .success-lwyw-brand {
+        margin-bottom: 28px !important;
+    }
+    .success-title {
+        font-size: 22px !important;
+    }
+    .success-subtext {
+        font-size: 17px !important;
+        max-width: 270px !important;
+    }
 }

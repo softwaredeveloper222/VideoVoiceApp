@@ -10,9 +10,9 @@ const SEG_HEIGHT = 144;
 
 const BACKGROUNDS = [
   { id: "none", label: "None", type: "none", card: "/card_img/none.png", preview: "#07182D" },
-  { id: "lwyw-1", label: "LWYW 1", type: "image", src: "/backgrounds/LWYW_1.png", card: "/card_img/LWYW_card_1.png", preview: "linear-gradient(135deg, #c8956a, #f0ebe0)" },
-  { id: "lwyw-2", label: "LWYW 2", type: "image", src: "/backgrounds/LWYW_2.png", card: "/card_img/LWYW_card_2.png", preview: "linear-gradient(135deg, #7a9ab0, #e8ecf0)" },
-  { id: "lwyw-3", label: "LWYW 3", type: "image", src: "/backgrounds/LWYW_3.png", card: "/card_img/LWYW_card_3.png", cardSize: "85%", preview: "linear-gradient(135deg, #7a5c3c, #c8a050)" },
+  { id: "lwyw-1", label: "LWYW 1", type: "image", src: "/backgrounds/Rectangle.png", card: "/card_img/Rectangle.png", preview: "linear-gradient(135deg, #c8956a, #f0ebe0)" },
+  { id: "lwyw-2", label: "LWYW 2", type: "image", src: "/backgrounds/Horizontal.png", card: "/card_img/Horizontal.png",cardSize: "85%", preview: "linear-gradient(135deg, #7a9ab0, #e8ecf0)" },
+  { id: "lwyw-3", label: "LWYW 3", type: "image", src: "/backgrounds/Square.png", card: "/card_img/Square.png", cardSize: "70%", preview: "linear-gradient(135deg, #7a5c3c, #c8a050)" },
 ];
 
 const MAX_DURATION = 30;
@@ -84,6 +84,8 @@ uniform sampler2D u_video;
 uniform sampler2D u_mask;     // EMA-smoothed mask  — stable bg/fg, no flicker
 uniform sampler2D u_rawMask;  // current-frame mask — zero temporal lag
 uniform sampler2D u_bg;
+uniform sampler2D u_overlay;
+uniform vec4 u_overlayRect; // x,y,width,height in UV coords (lower-left origin)
 uniform int u_mode;
 uniform vec2 u_texelSize;     // full-res video texel (1/W, 1/H) — for Sobel
 uniform vec2 u_maskTexelSize; // mask-space texel  (1/256, 1/144)
@@ -99,10 +101,9 @@ in vec2 v_uv;
 out vec4 fragColor;
 
 void main() {
-  // Mirror video & mask sampling so the canvas (and recorded output) shows a selfie view.
-  // Background sampling intentionally stays in v_uv so virtual backgrounds aren't flipped.
-  vec2 videoUv = vec2(1.0 - v_uv.x, v_uv.y);
-  vec4 vid = texture(u_video, videoUv);
+  // Mirror only the video/mask sampling (character) — bg stays unflipped.
+  vec2 vidUV = vec2(1.0 - v_uv.x, v_uv.y);
+  vec4 vid = texture(u_video, vidUV);
   if (u_mode == 0) { fragColor = vid; return; }
 
   const vec3 luma = vec3(0.299, 0.587, 0.114);
@@ -118,7 +119,7 @@ void main() {
   for (int dy = -2; dy <= 2; dy++) {
     for (int dx = -2; dx <= 2; dx++) {
       if (abs(dx) > r || abs(dy) > r) continue;
-      vec2  mUV   = videoUv + vec2(float(dx), float(dy)) * u_maskTexelSize;
+      vec2  mUV   = vidUV + vec2(float(dx), float(dy)) * u_maskTexelSize;
       float rawV  = texture(u_rawMask, mUV).r;
       float blndV = texture(u_mask,    mUV).r;
       float lumN  = dot(texture(u_video, mUV).rgb, luma);
@@ -140,10 +141,10 @@ void main() {
   float m = mix(mBlend, mRaw, clamp(0.25 + uncertainty * 1.5, 0.0, 1.0));
 
   // ── Pass 3: Full-resolution video-space edge snap (Sobel) ─────────────────
-  float lumR = dot(texture(u_video, videoUv + vec2( u_texelSize.x, 0.0)).rgb, luma);
-  float lumL = dot(texture(u_video, videoUv + vec2(-u_texelSize.x, 0.0)).rgb, luma);
-  float lumU = dot(texture(u_video, videoUv + vec2(0.0,  u_texelSize.y)).rgb, luma);
-  float lumD = dot(texture(u_video, videoUv + vec2(0.0, -u_texelSize.y)).rgb, luma);
+  float lumR = dot(texture(u_video, vidUV + vec2( u_texelSize.x, 0.0)).rgb, luma);
+  float lumL = dot(texture(u_video, vidUV + vec2(-u_texelSize.x, 0.0)).rgb, luma);
+  float lumU = dot(texture(u_video, vidUV + vec2(0.0,  u_texelSize.y)).rgb, luma);
+  float lumD = dot(texture(u_video, vidUV + vec2(0.0, -u_texelSize.y)).rgb, luma);
   float videoEdge = clamp(length(vec2(lumR - lumL, lumU - lumD)) * 7.0, 0.0, 1.0);
   float mSnap = step(0.5, m);
   float snapStrength = 0.85 * (1.0 - u_edgeBlur * 0.06);
@@ -167,6 +168,17 @@ void main() {
     }
   }
   fragColor = base;
+  // Overlay compositing: sample overlay texture if UV inside rect
+  vec2 oRectPos = u_overlayRect.xy;
+  vec2 oRectSize = u_overlayRect.zw;
+  vec2 rel = (v_uv - oRectPos) / oRectSize;
+  if (rel.x >= 0.0 && rel.x <= 1.0 && rel.y >= 0.0 && rel.y <= 1.0) {
+    // overlay texture assumed not mirrored
+    vec2 oUV = vec2(rel.x, rel.y);
+    vec4 oCol = texture(u_overlay, oUV);
+    // simple alpha blend
+    fragColor = mix(fragColor, oCol, oCol.a);
+  }
 }`;
 
 function compileShader(gl, src, type) {
@@ -228,6 +240,7 @@ function initWebGL(gl) {
   const maskTex = createGLTexture(gl, maskFilter);
   const rawMaskTex = createGLTexture(gl, maskFilter);
   const bgTex = createGLTexture(gl, gl.LINEAR);
+  const overlayTex = createGLTexture(gl, gl.LINEAR);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([26, 26, 46, 255]));
 
   gl.useProgram(program);
@@ -246,17 +259,21 @@ function initWebGL(gl) {
     u_blendMode: gl.getUniformLocation(program, "u_blendMode"),
     u_hasImageBg: gl.getUniformLocation(program, "u_hasImageBg"),
     u_bgCover: gl.getUniformLocation(program, "u_bgCover"),
+    u_overlay: gl.getUniformLocation(program, "u_overlay"),
+    u_overlayRect: gl.getUniformLocation(program, "u_overlayRect"),
   };
   gl.uniform1i(uniforms.u_video, 0);
   gl.uniform1i(uniforms.u_mask, 1);
   gl.uniform1i(uniforms.u_bg, 2);
   gl.uniform1i(uniforms.u_rawMask, 3);
   gl.uniform4f(uniforms.u_bgCover, 1.0, 1.0, 0.0, 0.0);
+  gl.uniform1i(uniforms.u_overlay, 4);
+  gl.uniform4f(uniforms.u_overlayRect, 0.0, 0.0, 0.0, 0.0);
 
   const u_maskTexelSizeLoc = gl.getUniformLocation(program, "u_maskTexelSize");
   gl.uniform2f(u_maskTexelSizeLoc, 1.0 / SEG_WIDTH, 1.0 / SEG_HEIGHT);
 
-  return { program, vao, buf, textures: { video: videoTex, mask: maskTex, rawMask: rawMaskTex, bg: bgTex }, uniforms };
+  return { program, vao, buf, textures: { video: videoTex, mask: maskTex, rawMask: rawMaskTex, bg: bgTex, overlay: overlayTex }, uniforms };
 }
 
 // ─── Default post-processing (soft edges preset) ───────────────
@@ -271,15 +288,42 @@ const DEFAULT_POST_PROCESSING = {
 };
 
 // ─── WebGL background compositing with ML segmentation ────────
-function useBackgroundEffect(videoRef, canvasRef, selectedBg, segmenterRef, segmenterReady, uploadedImage, bgImagesRef, postProcessing = DEFAULT_POST_PROCESSING) {
+function useBackgroundEffect(
+  videoRef,
+  canvasRef,
+  selectedBg,
+  segmenterRef,
+  segmenterReady,
+  uploadedImage,
+  bgImagesRef,
+  postProcessing = DEFAULT_POST_PROCESSING,
+  disableBgFilter = false,
+  previewRef,
+  recordCanvasRef,
+  recordCanvasCtxRef,
+  isRecordingRef
+) {
   const selectedBgRef = useRef(selectedBg);
   const segmenterReadyRef = useRef(segmenterReady);
   const uploadedImageRef = useRef(uploadedImage);
-  const postProcessingRef = useRef(postProcessing);
-  selectedBgRef.current = selectedBg;
-  segmenterReadyRef.current = segmenterReady;
-  uploadedImageRef.current = uploadedImage;
-  postProcessingRef.current = postProcessing;
+  const disableBgFilterRef = useRef(disableBgFilter);
+  useEffect(() => {
+    selectedBgRef.current = selectedBg;
+  }, [selectedBg]);
+
+  // selectedStickerSrc is derived from selectedBg/bgImagesRef when needed
+
+  useEffect(() => {
+    segmenterReadyRef.current = segmenterReady;
+  }, [segmenterReady]);
+
+  useEffect(() => {
+    uploadedImageRef.current = uploadedImage;
+  }, [uploadedImage]);
+
+  useEffect(() => {
+    disableBgFilterRef.current = disableBgFilter;
+  }, [disableBgFilter]);
 
   const rendererRef = useRef(null);
   const blurCanvasRef = useRef(null);
@@ -320,8 +364,108 @@ function useBackgroundEffect(videoRef, canvasRef, selectedBg, segmenterRef, segm
       const h = video.videoHeight || 480;
       const r = rendererRef.current;
       const curBg = selectedBgRef.current;
+      const curStickerSrc = !!(bgImagesRef?.current?.[curBg]);
       const curReady = segmenterReadyRef.current;
       const curUploaded = uploadedImageRef.current;
+      const curDisableBg = disableBgFilterRef.current;
+
+      // helper: upload overlay texture and set overlay rect uniform so shader composes it
+      const uploadOverlayToGL = () => {
+        if (!r || !r.textures || !r.textures.overlay) return;
+        const overlayImg = bgImagesRef?.current?.[curBg];
+        if (!overlayImg || !overlayImg.complete || !curStickerSrc) {
+          gl.useProgram(r.program);
+          gl.uniform4f(r.uniforms.u_overlayRect, 0.0, 0.0, 0.0, 0.0);
+          return;
+        }
+        gl.activeTexture(gl.TEXTURE4);
+        gl.bindTexture(gl.TEXTURE_2D, r.textures.overlay);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, overlayImg);
+        // compute overlay rect in UV coords (lower-left origin)
+        let uvx = 0, uvy = 0, uvw = 0, uvh = 0;
+        // Prefer DOM-measured preview bounds when available for pixel-perfect alignment
+        if (previewRef && previewRef.current) {
+          try {
+            const pr = previewRef.current.getBoundingClientRect();
+            const cr = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / cr.width;
+            const scaleY = canvas.height / cr.height;
+            const xPx = Math.round((pr.left - cr.left) * scaleX);
+            const yPxTop = Math.round((pr.top - cr.top) * scaleY);
+            const overlayWidthPx = Math.round(pr.width * scaleX);
+            const overlayHeightPx = Math.round(pr.height * scaleY);
+            uvx = xPx / canvas.width;
+            // shader expects origin at lower-left, while DOM rect uses top-left
+            uvy = (canvas.height - yPxTop - overlayHeightPx) / canvas.height;
+            uvw = overlayWidthPx / canvas.width;
+            uvh = overlayHeightPx / canvas.height;
+          } catch (err) {
+            // fallback to CSS-based calc below
+          }
+        }
+        if (uvw === 0 || uvh === 0) {
+          // fallback: center-bottom based on CSS heuristics
+          const overlayWidthCss = curBg === "lwyw-2" ? 320 : Math.min(overlayImg.naturalWidth, 320);
+          const overlayHeightCss = Math.round((overlayWidthCss / overlayImg.naturalWidth) * overlayImg.naturalHeight);
+          const overlayBottomCss = curBg === "lwyw-2" ? 180 : 240;
+          const cssToCanvasScale = (canvas.width && canvas.clientWidth) ? (canvas.width / canvas.clientWidth) : 1;
+          const overlayWidth = Math.round(overlayWidthCss * cssToCanvasScale);
+          const overlayHeight = Math.round(overlayHeightCss * cssToCanvasScale);
+          const overlayBottom = Math.round(overlayBottomCss * cssToCanvasScale);
+          uvx = (canvas.width - overlayWidth) / 2 / canvas.width;
+          const yPx = Math.round(canvas.height - overlayBottom - overlayHeight);
+          uvy = yPx / canvas.height;
+          uvw = overlayWidth / canvas.width;
+          uvh = overlayHeight / canvas.height;
+        }
+        gl.useProgram(r.program);
+        gl.uniform4f(r.uniforms.u_overlayRect, uvx, uvy, uvw, uvh);
+      };
+
+      const maybeCopyToRecordCanvas = () => {
+        if (!isRecordingRef.current || !recordCanvasRef.current || !recordCanvasCtxRef.current) return;
+        const rc = recordCanvasRef.current;
+        const rctx = recordCanvasCtxRef.current;
+        if (rc.width !== canvas.width || rc.height !== canvas.height) {
+          rc.width = canvas.width;
+          rc.height = canvas.height;
+        }
+        // copy the visible canvas pixels
+        rctx.clearRect(0, 0, rc.width, rc.height);
+        rctx.drawImage(canvas, 0, 0);
+        const overlayImg = bgImagesRef?.current?.[curBg];
+        if (overlayImg && overlayImg.complete && curStickerSrc) {
+          let drawX = null, drawY = null, drawW = null, drawH = null;
+          if (previewRef && previewRef.current) {
+            try {
+              const pr = previewRef.current.getBoundingClientRect();
+              const cr = canvas.getBoundingClientRect();
+              const scaleX = rc.width / cr.width;
+              const scaleY = rc.height / cr.height;
+              drawX = Math.round((pr.left - cr.left) * scaleX);
+              drawY = Math.round((pr.top - cr.top) * scaleY);
+              drawW = Math.round(pr.width * scaleX);
+              drawH = Math.round(pr.height * scaleY);
+            } catch (err) {
+              drawX = null;
+            }
+          }
+          if (drawW == null || drawH == null) {
+            const overlayWidthCss = curBg === "lwyw-2" ? 320 : Math.min(overlayImg.naturalWidth, 320);
+            const overlayHeightCss = Math.round((overlayWidthCss / overlayImg.naturalWidth) * overlayImg.naturalHeight);
+            const overlayBottomCss = curBg === "lwyw-2" ? 180 : 240;
+            const cssToCanvasScale = (rc.width && canvas.clientWidth) ? (rc.width / canvas.clientWidth) : 1;
+            const overlayWidthPx = Math.round(overlayWidthCss * cssToCanvasScale);
+            const overlayHeightPx = Math.round(overlayHeightCss * cssToCanvasScale);
+            const overlayBottomPx = Math.round(overlayBottomCss * cssToCanvasScale);
+            drawX = Math.round((rc.width - overlayWidthPx) / 2);
+            drawY = Math.round(rc.height - overlayBottomPx - overlayHeightPx);
+            drawW = overlayWidthPx;
+            drawH = overlayHeightPx;
+          }
+          if (drawW > 0 && drawH > 0) rctx.drawImage(overlayImg, drawX, drawY, drawW, drawH);
+        }
+      };
 
       // Canvas = screen CSS size (no DPR scaling — produces standard video dimensions)
       const cw = canvas.clientWidth || window.innerWidth;
@@ -349,11 +493,13 @@ function useBackgroundEffect(videoRef, canvasRef, selectedBg, segmenterRef, segm
       gl.viewport(vx, vy, vw, vh);
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, video);
 
-      if (curBg === "none" || !curReady || !segmenterRef.current) {
+      if (curBg === "none" || !curReady || !segmenterRef.current || curDisableBg) {
         gl.useProgram(r.program);
         gl.uniform1i(r.uniforms.u_mode, 0);
         gl.bindVertexArray(r.vao);
+        uploadOverlayToGL();
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        maybeCopyToRecordCanvas();
         animFrameRef.current = requestAnimationFrame(draw);
         return;
       }
@@ -392,7 +538,9 @@ function useBackgroundEffect(videoRef, canvasRef, selectedBg, segmenterRef, segm
         gl.useProgram(r.program);
         gl.uniform1i(r.uniforms.u_mode, 0);
         gl.bindVertexArray(r.vao);
+        uploadOverlayToGL();
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        maybeCopyToRecordCanvas();
         animFrameRef.current = requestAnimationFrame(draw);
         return;
       }
@@ -452,21 +600,12 @@ function useBackgroundEffect(videoRef, canvasRef, selectedBg, segmenterRef, segm
         gl.uniform4f(r.uniforms.u_bgCover, 1.0, 1.0, 0.0, 0.0);
       }
 
-      const pp = postProcessingRef.current || DEFAULT_POST_PROCESSING;
-      const hasImageBg = (bg?.type === "image" || bg?.type === "upload") ? 1 : 0;
-      gl.uniform1f(r.uniforms.u_sigmaSpace, pp.sigmaSpace);
-      gl.uniform1f(r.uniforms.u_edgeBlur, pp.edgeBlur ?? 0);
-      gl.uniform1f(r.uniforms.u_sigmaColor, pp.sigmaColor);
-      gl.uniform2f(r.uniforms.u_coverage, pp.coverageMin, pp.coverageMax);
-      gl.uniform1f(r.uniforms.u_lightWrapping, pp.lightWrapping);
-      gl.uniform1i(r.uniforms.u_blendMode, pp.blendMode === "linearDodge" ? 1 : 0);
-      gl.uniform1i(r.uniforms.u_hasImageBg, hasImageBg);
-
       gl.useProgram(r.program);
       gl.uniform1i(r.uniforms.u_mode, 1);
       gl.bindVertexArray(r.vao);
+      uploadOverlayToGL();
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
+      maybeCopyToRecordCanvas();
       animFrameRef.current = requestAnimationFrame(draw);
     };
 
@@ -490,6 +629,9 @@ function useBackgroundEffect(videoRef, canvasRef, selectedBg, segmenterRef, segm
 export default function RecordScreen({ onNext }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const recordCanvasRef = useRef(null);
+  const recordCanvasCtxRef = useRef(null);
+  const isRecordingRef = useRef(false);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
@@ -503,75 +645,21 @@ export default function RecordScreen({ onNext }) {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [isLandscape, setIsLandscape] = useState(() => window.innerWidth > window.innerHeight);
-  const POST_PROCESSING_KEY = "videoVoiceApp_edgeSmoothness";
-  const loadSavedPostProcessing = () => {
-    try {
-      const s = localStorage.getItem(POST_PROCESSING_KEY);
-      if (s) {
-        const parsed = JSON.parse(s);
-        return { ...DEFAULT_POST_PROCESSING, ...parsed };
-      }
-    } catch (_) {}
-    return { ...DEFAULT_POST_PROCESSING };
-  };
-  const [postProcessing, setPostProcessing] = useState(loadSavedPostProcessing);
-  const [postProcessVisible, setPostProcessVisible] = useState(() => !window.matchMedia("(max-width: 480px)").matches);
-  const [postProcessAnimatingOut, setPostProcessAnimatingOut] = useState(false);
+  const [disableBgFilter, setDisableBgFilter] = useState(false);
 
   const [recordBtnPressed, setRecordBtnPressed] = useState(false);
+  const [showBgPanel, setShowBgPanel] = useState(false);
+  const [bottomPanelAnimatingOut, setBottomPanelAnimatingOut] = useState(false);
   const [isDesktop, setIsDesktop] = useState(
     () => typeof window !== "undefined" && window.innerWidth > 768
   );
-  // Desktop-only: toggle BG panel visibility. On mobile the panel is always shown.
-  const [showBgPanel, setShowBgPanel] = useState(false);
-  const [bottomPanelAnimatingOut, setBottomPanelAnimatingOut] = useState(false);
-  const handleBottomPanelAnimEnd = (e) => {
-    if (e.animationName === "scrollFadeOut") {
-      setShowBgPanel(false);
-      setBottomPanelAnimatingOut(false);
-    }
-  };
-  const handleViewBgClick = () => {
-    if (showBgPanel) {
-      setBottomPanelAnimatingOut(true);
-    } else {
-      setShowBgPanel(true);
-    }
-  };
-  const [bgPanelHeight, setBgPanelHeight] = useState(0);
-  // Captures the panel's height during recording-phase content so preview can match it.
-  const [lockedPanelHeight, setLockedPanelHeight] = useState(0);
-  const bgPanelObserverRef = useRef(null);
-  const bgPanelRef = useCallback((el) => {
-    if (bgPanelObserverRef.current) {
-      bgPanelObserverRef.current.disconnect();
-      bgPanelObserverRef.current = null;
-    }
-    if (el) {
-      setBgPanelHeight(el.getBoundingClientRect().height);
-      if (typeof ResizeObserver !== "undefined") {
-        bgPanelObserverRef.current = new ResizeObserver(([entry]) => {
-          setBgPanelHeight(entry.contentRect.height);
-        });
-        bgPanelObserverRef.current.observe(el);
-      }
-    } else {
-      setBgPanelHeight(0);
-    }
-  }, []);
+
 
   useEffect(() => {
     const onResize = () => setIsDesktop(window.innerWidth > 768);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-
-  // Capture the panel's height while showing recording-phase content so preview can match it.
-  useEffect(() => {
-    if (phase !== "preview" && bgPanelHeight > 0) {
-      setLockedPanelHeight(bgPanelHeight);
-    }
-  }, [phase, bgPanelHeight]);
 
   // Lock to portrait orientation on mobile
   useEffect(() => {
@@ -593,9 +681,44 @@ export default function RecordScreen({ onNext }) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  const handleBottomPanelHide = () => {
+    setBottomPanelAnimatingOut(true);
+  };
+  const handleBottomPanelAnimEnd = (e) => {
+    if (e.animationName === "scrollFadeOut") {
+      setShowBgPanel(false);
+      setBottomPanelAnimatingOut(false);
+    }
+  };
+  const handleViewBgClick = () => {
+    if (showBgPanel) {
+      handleBottomPanelHide();
+    } else {
+      setShowBgPanel(true);
+    }
+  };
+
   const bgImagesRef = useRef({});
   const { segmenterRef, segmenterReady, segmenterError } = useSegmenter();
-  useBackgroundEffect(videoRef, canvasRef, selectedBg, segmenterRef, segmenterReady, null, bgImagesRef, postProcessing);
+  const previewRef = useRef(null);
+  useBackgroundEffect(
+    videoRef,
+    canvasRef,
+    selectedBg,
+    segmenterRef,
+    segmenterReady,
+    null,
+    bgImagesRef,
+    undefined,
+    disableBgFilter,
+    previewRef,
+    recordCanvasRef,
+    recordCanvasCtxRef,
+    isRecordingRef
+  );
+
+  const selectedBgData = BACKGROUNDS.find((bg) => bg.id === selectedBg);
+  const selectedStickerSrc = selectedBgData?.type === "image" ? selectedBgData.src : null;
 
   useEffect(() => {
     BACKGROUNDS.filter((bg) => bg.type === "image" && bg.src).forEach((bg) => {
@@ -659,17 +782,53 @@ export default function RecordScreen({ onNext }) {
 
   const startRecording = useCallback(() => {
     chunksRef.current = [];
-    const canvasStream = canvasRef.current.captureStream(30);
+    // ensure hidden record canvas exists and matches GL canvas size
+    const canvas = canvasRef.current;
+    if (!recordCanvasRef.current) {
+      const rc = document.createElement("canvas");
+      recordCanvasRef.current = rc;
+      recordCanvasCtxRef.current = rc.getContext("2d");
+    }
+    const rc = recordCanvasRef.current;
+    const rctx = recordCanvasCtxRef.current;
+    rc.width = canvas.width;
+    rc.height = canvas.height;
+    isRecordingRef.current = true;
+    const canvasStream = rc.captureStream(30);
     const audioTrack = streamRef.current?.getAudioTracks()[0];
     if (audioTrack) canvasStream.addTrack(audioTrack);
-
-    const mr = new MediaRecorder(canvasStream, { mimeType: "video/webm;codecs=vp9,opus" });
-    mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+      ? "video/webm;codecs=vp9,opus"
+      : MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+      ? "video/webm;codecs=vp8,opus"
+      : "video/webm";
+    let mr;
+    try {
+      mr = new MediaRecorder(canvasStream, { mimeType });
+    } catch (err) {
+      console.error("MediaRecorder constructor failed:", err);
+      setCameraError("Recording is not supported in this browser.");
+      setPhase("setup");
+      return;
+    }
+    mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
     mr.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: "video/webm" });
+      const recordedChunks = chunksRef.current.filter((chunk) => chunk && chunk.size > 0);
+      if (recordedChunks.length === 0) {
+        console.error("Recording finished with no data.");
+        setCameraError("Recording failed. Please try again.");
+        setPhase("setup");
+        return;
+      }
+      const blob = new Blob(recordedChunks, { type: mimeType || "video/webm" });
       setRecordedBlob(blob);
       setRecordedUrl(URL.createObjectURL(blob));
       setPhase("preview");
+    };
+    mr.onerror = (err) => {
+      console.error("MediaRecorder error:", err);
+      setCameraError("Recording failed. Please try again.");
+      setPhase("setup");
     };
     mediaRecorderRef.current = mr;
     mr.start(100);
@@ -708,8 +867,7 @@ export default function RecordScreen({ onNext }) {
   const progress = (elapsed / MAX_DURATION) * 100;
   const timeLeft = MAX_DURATION - elapsed;
 
-  const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-  if (isLandscape && isTouchDevice) {
+  if (isLandscape) {
     return (
       <div style={{
         ...styles.cameraScreen,
@@ -734,7 +892,7 @@ export default function RecordScreen({ onNext }) {
       <video ref={videoRef} style={styles.hiddenVideo} muted playsInline />
 
       {/* Camera / preview canvas */}
-      <div style={{ ...styles.cameraView, ...(!isDesktop ? { bottom: bgPanelHeight } : {}) }} className="camera-view">
+      <div style={styles.cameraView} className="camera-view">
         <canvas ref={canvasRef} style={{ ...styles.cameraFeed, display: phase === "preview" ? "none" : "block" }} />
         {phase === "preview" && (
           <video src={recordedUrl} style={styles.cameraFeed} controls={isDesktop} autoPlay loop playsInline />
@@ -790,292 +948,112 @@ export default function RecordScreen({ onNext }) {
           </div>
         )}
 
-        {/* Gear / settings button */}
-        {phase === "setup" && selectedBg !== "none" && (
-          <button
-            type="button"
-            onClick={() => {
-              if (postProcessVisible && !postProcessAnimatingOut) {
-                setPostProcessAnimatingOut(true);
-              } else if (!postProcessVisible && !postProcessAnimatingOut) {
-                setPostProcessVisible(true);
-              }
-            }}
-            style={{
-              position: "absolute",
-              top: 16,
-              right: 16,
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              background: "rgba(0,0,0,0.45)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              zIndex: 10,
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-            }}
-            aria-label="Edge smoothness settings"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-            </svg>
-          </button>
-        )}
-
-        {/* Post-processing settings panel */}
-        {phase === "setup" && selectedBg !== "none" && (postProcessVisible || postProcessAnimatingOut) && (
-          <div
-            className={postProcessAnimatingOut ? "anim-edge-panel-out" : "anim-edge-panel-in"}
-            onAnimationEnd={(e) => {
-              if (e.animationName === "edgePanelSlideOut") {
-                setPostProcessVisible(false);
-                setPostProcessAnimatingOut(false);
-              }
-            }}
-            style={{
-              position: "absolute",
-              top: 64,
-              right: 16,
-              width: 220,
-              background: "rgba(0,0,0,0.65)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              borderRadius: 12,
-              padding: "14px 16px",
-              zIndex: 10,
-              border: "1px solid rgba(255,255,255,0.1)",
-            }}
-          >
-            <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'CiscoSansTT', sans-serif" }}>
-              Edge Smoothness
-            </p>
-            {[
-              { key: "sigmaSpace", label: "Spatial blur", min: 0, max: 10, step: 0.5 },
-              { key: "edgeBlur", label: "Edge blur", min: 0, max: 8, step: 0.5 },
-              { key: "sigmaColor", label: "Color aware", min: 0.01, max: 1, step: 0.01 },
-              { key: "coverageMin", label: "Coverage min", min: 0, max: 1, step: 0.01 },
-              { key: "coverageMax", label: "Coverage max", min: 0, max: 1, step: 0.01 },
-              { key: "lightWrapping", label: "Light wrap", min: 0, max: 1, step: 0.01 },
-            ].map(({ key, label, min, max, step }) => (
-              <div key={key} style={{ marginBottom: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(255,255,255,0.7)", fontFamily: "'CiscoSansTT', sans-serif", marginBottom: 2 }}>
-                  <span>{label}</span>
-                  <span>{Number(postProcessing[key]).toFixed(step < 0.1 ? 2 : 1)}</span>
-                </div>
-                <input
-                  type="range"
-                  min={min}
-                  max={max}
-                  step={step}
-                  value={postProcessing[key]}
-                  onChange={(e) => setPostProcessing((prev) => ({ ...prev, [key]: parseFloat(e.target.value) }))}
-                  style={{ width: "100%", accentColor: "#00bceb", height: 4 }}
-                />
-              </div>
-            ))}
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <button
-                onClick={() => setPostProcessing({ ...DEFAULT_POST_PROCESSING })}
-                style={{
-                  flex: 1, padding: "6px 0", fontSize: 11, fontFamily: "'CiscoSansTT', sans-serif",
-                  background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)",
-                  borderRadius: 6, color: "#fff", cursor: "pointer", letterSpacing: "0.04em",
-                }}
-              >
-                Default
-              </button>
-              <button
-                onClick={() => {
-                  try { localStorage.setItem(POST_PROCESSING_KEY, JSON.stringify(postProcessing)); } catch (_) {}
-                  setPostProcessAnimatingOut(true);
-                }}
-                style={{
-                  flex: 1, padding: "6px 0", fontSize: 11, fontFamily: "'CiscoSansTT', sans-serif",
-                  background: "rgba(0,188,235,0.25)", border: "1px solid rgba(0,188,235,0.4)",
-                  borderRadius: 6, color: "#fff", cursor: "pointer", letterSpacing: "0.04em",
-                }}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Edge smoothness controls removed */}
 
       </div>
 
-      {/* Mobile: floating record button OUTSIDE the BG panel, just above it */}
-      {!isDesktop && (
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: bgPanelHeight + 8,
-            display: "flex",
-            justifyContent: "center",
-            zIndex: 11,
-            pointerEvents: "none",
-          }}
-        >
-          <div style={{ pointerEvents: "auto" }}>
-            {phase === "setup" && (
-              <button
-                onClick={() => {
-                  setRecordBtnPressed(true);
-                  setTimeout(() => {
-                    setRecordBtnPressed(false);
-                    startCountdown();
-                  }, 350);
-                }}
-                disabled={!cameraReady || recordBtnPressed}
-                style={{ ...styles.recordBtn, opacity: cameraReady ? 1 : 0.4 }}
-                className={`record-btn${recordBtnPressed ? " record-btn-pressed" : ""}`}
-                aria-label="Start recording"
-              >
-                <span style={styles.recordDot} />
-              </button>
-            )}
-            {phase === "countdown" && (
-              <button style={{ ...styles.recordBtn, opacity: 0.4 }} className="record-btn" disabled aria-label="Preparing…">
-                <span style={styles.recordDot} />
-              </button>
-            )}
-            {phase === "recording" && (
-              <button onClick={stopRecording} style={{ ...styles.recordBtn, ...styles.recordBtnActive }} className="record-btn" aria-label="Stop recording">
-                <span style={styles.stopSquare} />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Mobile: BG panel stays visible through every phase. In preview it holds only Retake + Use This. */}
-      {!isDesktop && (
-        <div ref={bgPanelRef} style={styles.bottomAreaExpanded} className="bottom-area-expanded">
-          <div
-            style={{
-              ...styles.bottomPanelExpandedOnly,
-              ...(phase === "preview" && lockedPanelHeight > 0
-                ? { minHeight: lockedPanelHeight, display: "flex", alignItems: "center", justifyContent: "center" }
-                : {}),
-            }}
-            className="bottom-panel"
-          >
-            {phase === "preview" ? (
-              <div style={styles.previewBtns} className="preview-btns anim-slide-up">
-                <button onClick={retake} style={styles.outlineBtn} className="outline-btn">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 7 }}>
-                    <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
-                  </svg>
-                  Retake
-                </button>
-                <button onClick={() => onNext(recordedBlob)} style={styles.filledBtn} className="filled-btn">
-                  Use This
-                  <svg style={{ marginLeft: 8 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div style={styles.bgSection} className="bg-section">
-                <p style={{ ...styles.bgTitle, marginBottom: 14, textAlign: "center" }}>
-                  Choose your background
-                  {!segmenterReady && !segmenterError && (
-                    <span style={styles.segmenterLoadingText}> · loading AI…</span>
-                  )}
-                </p>
-                <div style={styles.bgThumbs} className="bg-thumbs">
-                  {BACKGROUNDS.map((bg) => (
-                    <button
-                      key={bg.id}
-                      onClick={() => setSelectedBg(bg.id)}
-                      style={{
-                        ...styles.bgThumb,
-                        background: bg.type === "none" && bg.card
-                          ? `${bg.preview} url(${bg.card}) center/50% no-repeat`
-                          : bg.id === "lwyw-1" && isDesktop && bg.card
-                          ? `url(${bg.card}) center 72% / ${bg.cardSize || "cover"} no-repeat`
-                          : bg.card
-                          ? `url(${bg.card}) center/${bg.cardSize || "cover"} no-repeat`
-                          : bg.type === "image" && bg.src
-                          ? `url(${bg.src}) center/cover`
-                          : bg.preview,
-                        ...(selectedBg === bg.id ? styles.bgThumbActive : {}),
-                      }}
-                      className="bg-thumb"
-                      title={bg.label}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Desktop: original toggle-based BG panel */}
-      {isDesktop && phase === "setup" && (
+      {/* Virtual background — button + panel as one unit */}
+      {phase === "setup" && (
         <div
           style={styles.bottomAreaExpanded}
           className={`bottom-area-expanded${showBgPanel && !bottomPanelAnimatingOut ? " anim-scroll-fade-in" : ""}${bottomPanelAnimatingOut ? " anim-scroll-fade-out" : ""}`}
           onAnimationEnd={handleBottomPanelAnimEnd}
         >
-          <button
-            type="button"
-            onClick={handleViewBgClick}
-            disabled={bottomPanelAnimatingOut}
-            style={{ ...styles.viewBgBtn, ...styles.viewBgBtnAbovePanel }}
-            className="view-bg-btn view-bg-btn-panel"
-            aria-label={showBgPanel ? "Hide virtual backgrounds" : "View virtual backgrounds"}
-          >
-            <img src="/img/virtual_background_button_img.png" alt="Virtual Background" style={{ width: 24, height: 24, objectFit: "contain" }} />
-          </button>
+          <div style={{ position: "relative", display: "inline-flex", alignSelf: "center" }}>
+            <button
+              type="button"
+              onClick={handleViewBgClick}
+              disabled={bottomPanelAnimatingOut}
+              style={{ ...styles.viewBgBtn, ...styles.viewBgBtnAbovePanel }}
+              className="view-bg-btn view-bg-btn-panel"
+              aria-label={showBgPanel ? "Hide virtual backgrounds" : "View virtual backgrounds"}
+            >
+              <img
+                src={showBgPanel ? "/img/Sticker.png" : "/img/virtual_background_button_img.png"}
+                alt="Virtual Background"
+                style={{
+                  width: showBgPanel ? 32 : 24,
+                  height: showBgPanel ? 32 : 24,
+                  objectFit: "contain",
+                  transition: "width 200ms ease, height 200ms ease, transform 200ms ease",
+                  transform: showBgPanel ? "scale(1.08)" : "scale(1)",
+                }}
+              />
+            </button>
+          </div>
           {(showBgPanel || bottomPanelAnimatingOut) && (
-            <div style={styles.bottomPanelExpandedOnly} className="bottom-panel">
-              <div style={styles.bgSection} className="bg-section">
-                <p style={{ ...styles.bgTitle, marginBottom: 14, textAlign: "center" }}>
-                  Choose your background
-                  {!segmenterReady && !segmenterError && (
-                    <span style={styles.segmenterLoadingText}> · loading AI…</span>
-                  )}
-                </p>
-                <div style={styles.bgThumbs} className="bg-thumbs">
-                  {BACKGROUNDS.map((bg) => (
-                    <button
-                      key={bg.id}
-                      onClick={() => setSelectedBg(bg.id)}
-                      style={{
-                        ...styles.bgThumb,
-                        background: bg.type === "none" && bg.card
-                          ? `${bg.preview} url(${bg.card}) center/50% no-repeat`
-                          : bg.id === "lwyw-1" && isDesktop && bg.card
-                          ? `url(${bg.card}) center 72% / ${bg.cardSize || "cover"} no-repeat`
-                          : bg.card
-                          ? `url(${bg.card}) center/${bg.cardSize || "cover"} no-repeat`
-                          : bg.type === "image" && bg.src
-                          ? `url(${bg.src}) center/cover`
-                          : bg.preview,
-                        ...(selectedBg === bg.id ? styles.bgThumbActive : {}),
-                      }}
-                      className="bg-thumb"
-                      title={bg.label}
-                    />
-                  ))}
-                </div>
-              </div>
+          <div style={styles.bottomPanelExpandedOnly} className="bottom-panel">
+            <div style={styles.bgSection} className="bg-section">
+            <p style={{ ...styles.bgTitle, marginBottom: 14, textAlign: "center" }}>
+              Choose your sticker
+            </p>
+            <div style={styles.bgThumbs} className="bg-thumbs">
+              {BACKGROUNDS.map((bg) => (
+                  <button
+                    key={bg.id}
+                              onClick={() => {
+                                setSelectedBg(bg.id);
+                                setDisableBgFilter(bg.type === "image");
+                              }}
+                    style={{
+                      ...styles.bgThumb,
+                      background: bg.type === "none" && bg.card
+                        ? `${bg.preview} url(${bg.card}) center/50% no-repeat`
+                        : bg.id === "lwyw-1" && isDesktop && bg.card
+                        ? `url(${bg.card}) center 72% / ${bg.cardSize || "contain"} no-repeat`
+                        : bg.card
+                        ? `url(${bg.card}) center/${bg.cardSize || "contain"} no-repeat`
+                        : bg.type === "image" && bg.src
+                        ? `url(${bg.src}) center/cover`
+                        : bg.preview,
+                      ...(selectedBg === bg.id ? styles.bgThumbActive : {}),
+                    }}
+                    className="bg-thumb"
+                    title={bg.label}
+                  >
+                  </button>
+                ))}
             </div>
+            </div>
+          </div>
           )}
         </div>
       )}
 
-      {/* Desktop: record button at the bottom (original bottomPanelCollapsed) */}
-      {isDesktop && (
+      {selectedStickerSrc && phase !== "preview" && (
+        <div
+          style={{
+            position: "fixed",
+            left: "50%",
+            bottom: selectedBg === "lwyw-2" ? 180 : 240,
+            transform: "translateX(-50%)",
+            width: selectedBg === "lwyw-2" ? 320 : "auto",
+            maxWidth: selectedBg === "lwyw-2" ? 320 : 320,
+            height: selectedBg === "lwyw-2" ? 220 : "auto",
+            maxHeight: selectedBg === "lwyw-2" ? 220 : 200,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 8,
+            zIndex: 1000,
+            overflow: "hidden",
+          }}
+          ref={previewRef}
+        >
+          <img
+            src={selectedStickerSrc}
+            alt="Sticker Preview"
+            style={{
+              width: selectedBg === "lwyw-2" ? "100%" : "auto",
+              height: "auto",
+              objectFit: "contain",
+              maxWidth: "100%",
+            }}
+          />
+        </div>
+      )}
+
+      {/* Controls row — record button + View Virtual Background (when collapsed); countdown/recording/preview */}
         <div
           style={{
             ...styles.bottomPanel,
@@ -1085,53 +1063,58 @@ export default function RecordScreen({ onNext }) {
           }}
           className={`bottom-panel${phase !== "preview" ? " bottom-panel-with-bg-btn" : ""}`}
         >
-          <div style={{ ...styles.controlsRow, ...styles.controlsRowColumn }} className="controls-row">
-            {phase === "setup" && (
-              <button
-                onClick={() => {
-                  setRecordBtnPressed(true);
-                  setTimeout(() => {
-                    setRecordBtnPressed(false);
-                    startCountdown();
-                  }, 350);
-                }}
-                disabled={!cameraReady || recordBtnPressed}
-                style={{ ...styles.recordBtn, opacity: cameraReady ? 1 : 0.4 }}
-                className={`record-btn${recordBtnPressed ? " record-btn-pressed" : ""}`}
-                aria-label="Start recording"
-              >
-                <span style={styles.recordDot} />
-              </button>
-            )}
-            {phase === "countdown" && (
+        <div
+          style={{
+            ...styles.controlsRow,
+            ...styles.controlsRowColumn,
+          }}
+          className="controls-row"
+        >
+          {phase === "setup" && (
+            <button
+              onClick={() => {
+                setRecordBtnPressed(true);
+                setTimeout(() => {
+                  setRecordBtnPressed(false);
+                  startCountdown();
+                }, 350);
+              }}
+              disabled={!cameraReady || recordBtnPressed}
+              style={{ ...styles.recordBtn, opacity: cameraReady ? 1 : 0.4 }}
+              className={`record-btn${recordBtnPressed ? " record-btn-pressed" : ""}`}
+              aria-label="Start recording"
+            >
+              <span style={styles.recordDot} />
+            </button>
+          )}
+          {phase === "countdown" && (
               <button style={{ ...styles.recordBtn, opacity: 0.4 }} className="record-btn" disabled aria-label="Preparing…">
                 <span style={styles.recordDot} />
               </button>
-            )}
-            {phase === "recording" && (
+          )}
+          {phase === "recording" && (
               <button onClick={stopRecording} style={{ ...styles.recordBtn, ...styles.recordBtnActive }} className="record-btn" aria-label="Stop recording">
                 <span style={styles.stopSquare} />
               </button>
-            )}
-            {phase === "preview" && (
-              <div style={styles.previewBtns} className="preview-btns anim-slide-up">
-                <button onClick={retake} style={styles.outlineBtn} className="outline-btn">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 7 }}>
-                    <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
-                  </svg>
-                  Retake
-                </button>
-                <button onClick={() => onNext(recordedBlob)} style={styles.filledBtn} className="filled-btn">
-                  Use This
-                  <svg style={{ marginLeft: 8 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
+          )}
+          {phase === "preview" && (
+            <div style={styles.previewBtns} className="preview-btns anim-slide-up">
+              <button onClick={retake} style={styles.outlineBtn} className="outline-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 7 }}>
+                  <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+                </svg>
+                Retake
+              </button>
+              <button onClick={() => onNext(recordedBlob)} style={styles.filledBtn} className="filled-btn">
+                Use This
+                <svg style={{ marginLeft: 8 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
-      )}
+        </div>
 
 
     </div>
