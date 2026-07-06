@@ -1,7 +1,9 @@
-import { useCallback, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const HOME_PATH = "/";
+
+let trappedPath = null;
 
 export function canGoBackInApp() {
   return (window.history.state?.idx ?? 0) > 0;
@@ -24,23 +26,37 @@ export function useNavigateBack(homePath = HOME_PATH) {
 }
 
 /**
- * When the user lands directly on a deep link (no in-app history), seed home
- * so browser-back goes to "/" instead of leaving the app.
+ * When the user lands on a route with no in-app history (e.g. typing /question
+ * in the URL bar), trap the browser-back action and send them to home instead
+ * of leaving the app or showing a blank page.
  */
 export function HistoryFallback() {
   const location = useLocation();
   const navigate = useNavigate();
-  const seededRef = useRef(false);
 
-  useLayoutEffect(() => {
-    if (seededRef.current) return;
-    if (location.pathname === HOME_PATH) return;
-    if (canGoBackInApp()) return;
+  useEffect(() => {
+    if (location.pathname === HOME_PATH) {
+      trappedPath = null;
+      return;
+    }
 
-    seededRef.current = true;
-    const target = `${location.pathname}${location.search}${location.hash}`;
-    navigate(HOME_PATH, { replace: true });
-    navigate(target);
+    if (canGoBackInApp()) {
+      trappedPath = null;
+      return;
+    }
+
+    if (trappedPath === location.pathname) return;
+    trappedPath = location.pathname;
+
+    window.history.pushState({ backTrap: true }, "", window.location.href);
+
+    const handlePopState = () => {
+      trappedPath = null;
+      navigate(HOME_PATH, { replace: true });
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, [location.pathname, location.search, location.hash, navigate]);
 
   return null;
