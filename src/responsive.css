@@ -186,6 +186,9 @@
         height: 100dvh !important;
     }
     .bottom-panel {
+        border-radius: 0 !important;
+        border-top-left-radius: 0 !important;
+        border-top-right-radius: 0 !important;
         /* padding: 14px 20px calc(28px + env(safe-area-inset-bottom, 0px)) !important; */
     }
     .bg-section {
@@ -324,16 +327,13 @@
 }
 
 
-/* ── Bottom panel with bg button: consistent spacing ── */
+/* ── Bottom panel with bg button: consistent spacing (desktop) ── */
 
 .bottom-panel.bottom-panel-with-bg-btn {
     padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 
-/* ══════════════════════════════════════════════════════════
-   TOUCH DEVICES
-   ══════════════════════════════════════════════════════════ */
 
 @media (hover: none) and (pointer: coarse) {
     .outline-btn,

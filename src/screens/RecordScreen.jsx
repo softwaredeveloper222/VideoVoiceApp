@@ -407,7 +407,7 @@ function useBackgroundEffect(
           // fallback: center-bottom based on CSS heuristics
           const overlayWidthCss = curBg === "lwyw-2" ? 320 : Math.min(overlayImg.naturalWidth, 320);
           const overlayHeightCss = Math.round((overlayWidthCss / overlayImg.naturalWidth) * overlayImg.naturalHeight);
-          const overlayBottomCss = curBg === "lwyw-2" ? 180 : 240;
+          const overlayBottomCss = curBg === "lwyw-2" ? 200 : 250;
           const cssToCanvasScale = (canvas.width && canvas.clientWidth) ? (canvas.width / canvas.clientWidth) : 1;
           const overlayWidth = Math.round(overlayWidthCss * cssToCanvasScale);
           const overlayHeight = Math.round(overlayHeightCss * cssToCanvasScale);
@@ -453,7 +453,7 @@ function useBackgroundEffect(
           if (drawW == null || drawH == null) {
             const overlayWidthCss = curBg === "lwyw-2" ? 320 : Math.min(overlayImg.naturalWidth, 320);
             const overlayHeightCss = Math.round((overlayWidthCss / overlayImg.naturalWidth) * overlayImg.naturalHeight);
-            const overlayBottomCss = curBg === "lwyw-2" ? 180 : 240;
+            const overlayBottomCss = curBg === "lwyw-2" ? 200 : 250;
             const cssToCanvasScale = (rc.width && canvas.clientWidth) ? (rc.width / canvas.clientWidth) : 1;
             const overlayWidthPx = Math.round(overlayWidthCss * cssToCanvasScale);
             const overlayHeightPx = Math.round(overlayHeightCss * cssToCanvasScale);
@@ -661,8 +661,10 @@ export default function RecordScreen({ onNext }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Lock to portrait orientation on mobile
+  // Lock to portrait orientation on mobile only
   useEffect(() => {
+    if (window.innerWidth > 768) return;
+
     const lockPortrait = async () => {
       try {
         await screen.orientation?.lock?.("portrait");
@@ -867,7 +869,86 @@ export default function RecordScreen({ onNext }) {
   const progress = (elapsed / MAX_DURATION) * 100;
   const timeLeft = MAX_DURATION - elapsed;
 
-  if (isLandscape) {
+  const renderStickerThumbs = (disabled = false) => (
+    <div style={styles.bgThumbs} className="bg-thumbs">
+      {BACKGROUNDS.map((bg) => (
+        <button
+          key={bg.id}
+          onClick={() => {
+            setSelectedBg(bg.id);
+            setDisableBgFilter(bg.type === "image");
+          }}
+          disabled={disabled}
+          style={{
+            ...styles.bgThumb,
+            background: bg.type === "none" && bg.card
+              ? `${bg.preview} url(${bg.card}) center/50% no-repeat`
+              : bg.id === "lwyw-1" && isDesktop && bg.card
+              ? `url(${bg.card}) center 72% / ${bg.cardSize || "contain"} no-repeat`
+              : bg.card
+              ? `url(${bg.card}) center/${bg.cardSize || "contain"} no-repeat`
+              : bg.type === "image" && bg.src
+              ? `url(${bg.src}) center/cover`
+              : bg.preview,
+            ...(selectedBg === bg.id ? styles.bgThumbActive : {}),
+          }}
+          className="bg-thumb"
+          title={bg.label}
+        />
+      ))}
+    </div>
+  );
+
+  const renderRecordControls = (btnStyle = {}) => (
+    <>
+      {phase === "setup" && (
+        <button
+          onClick={() => {
+            setRecordBtnPressed(true);
+            setTimeout(() => {
+              setRecordBtnPressed(false);
+              startCountdown();
+            }, 350);
+          }}
+          disabled={!cameraReady || recordBtnPressed}
+          style={{ ...styles.recordBtn, ...btnStyle, opacity: cameraReady ? 1 : 0.4 }}
+          className={`record-btn${recordBtnPressed ? " record-btn-pressed" : ""}`}
+          aria-label="Start recording"
+        >
+          <span style={styles.recordDot} />
+        </button>
+      )}
+      {phase === "countdown" && (
+        <button style={{ ...styles.recordBtn, ...btnStyle, opacity: 0.4 }} className="record-btn" disabled aria-label="Preparing…">
+          <span style={styles.recordDot} />
+        </button>
+      )}
+      {phase === "recording" && (
+        <button onClick={stopRecording} style={{ ...styles.recordBtn, ...styles.recordBtnActive, ...btnStyle }} className="record-btn" aria-label="Stop recording">
+          <span style={styles.stopSquare} />
+        </button>
+      )}
+    </>
+  );
+
+  const renderPreviewControls = (wrapperStyle = {}) => (
+    <div style={{ ...styles.previewBtns, ...wrapperStyle }} className="preview-btns anim-slide-up">
+      <button onClick={retake} style={styles.outlineBtn} className="outline-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 7 }}>
+          <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+        </svg>
+        Retake
+      </button>
+      <button onClick={() => onNext(recordedBlob)} style={styles.filledBtn} className="filled-btn">
+        Use This
+        <svg style={{ marginLeft: 8 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+        </svg>
+      </button>
+    </div>
+  );
+
+  if (isLandscape && !isDesktop) {
     return (
       <div style={{
         ...styles.cameraScreen,
@@ -886,13 +967,19 @@ export default function RecordScreen({ onNext }) {
   }
 
   return (
-    <div style={styles.cameraScreen} className="camera-screen">
+    <div
+      style={isDesktop ? styles.cameraScreenDesktop : styles.cameraScreen}
+      className="camera-screen"
+    >
 
       {/* Hidden source video */}
       <video ref={videoRef} style={styles.hiddenVideo} muted playsInline />
 
       {/* Camera / preview canvas */}
-      <div style={styles.cameraView} className="camera-view">
+      <div
+        style={isDesktop ? styles.cameraViewDesktop : styles.cameraView}
+        className="camera-view"
+      >
         <canvas ref={canvasRef} style={{ ...styles.cameraFeed, display: phase === "preview" ? "none" : "block" }} />
         {phase === "preview" && (
           <video src={recordedUrl} style={styles.cameraFeed} controls={isDesktop} autoPlay loop playsInline />
@@ -948,174 +1035,170 @@ export default function RecordScreen({ onNext }) {
           </div>
         )}
 
+        {!isDesktop && selectedStickerSrc && phase !== "preview" && (
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              bottom: 88,
+              transform: "translateX(-50%)",
+              width: selectedBg === "lwyw-2" ? 320 : "auto",
+              maxWidth: selectedBg === "lwyw-2" ? 320 : 320,
+              height: selectedBg === "lwyw-2" ? 180 : "auto",
+              maxHeight: selectedBg === "lwyw-2" ? 180 : 200,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 8,
+              zIndex: 4,
+              overflow: "hidden",
+              pointerEvents: "none",
+            }}
+            ref={previewRef}
+          >
+            <img
+              src={selectedStickerSrc}
+              alt="Sticker Preview"
+              style={{
+                width: selectedBg === "lwyw-2" ? "100%" : "auto",
+                height: "auto",
+                objectFit: "contain",
+                maxWidth: "100%",
+              }}
+            />
+          </div>
+        )}
+
+        {!isDesktop && (
+          <div style={styles.recordControlsAbsolute} className="controls-row">
+            {renderRecordControls(styles.recordControlsAbsoluteBtn)}
+          </div>
+        )}
+
         {/* Edge smoothness controls removed */}
 
       </div>
 
-      {/* Virtual background — button + panel as one unit */}
-      {phase === "setup" && (
-        <div
-          style={styles.bottomAreaExpanded}
-          className={`bottom-area-expanded${showBgPanel && !bottomPanelAnimatingOut ? " anim-scroll-fade-in" : ""}${bottomPanelAnimatingOut ? " anim-scroll-fade-out" : ""}`}
-          onAnimationEnd={handleBottomPanelAnimEnd}
-        >
-          <div style={{ position: "relative", display: "inline-flex", alignSelf: "center" }}>
-            <button
-              type="button"
-              onClick={handleViewBgClick}
-              disabled={bottomPanelAnimatingOut}
-              style={{ ...styles.viewBgBtn, ...styles.viewBgBtnAbovePanel }}
-              className="view-bg-btn view-bg-btn-panel"
-              aria-label={showBgPanel ? "Hide virtual backgrounds" : "View virtual backgrounds"}
+      {isDesktop ? (
+        <>
+          {phase === "setup" && (
+            <div
+              style={styles.bottomAreaExpanded}
+              className={`bottom-area-expanded${showBgPanel && !bottomPanelAnimatingOut ? " anim-scroll-fade-in" : ""}${bottomPanelAnimatingOut ? " anim-scroll-fade-out" : ""}`}
+              onAnimationEnd={handleBottomPanelAnimEnd}
+            >
+              <div style={{ position: "relative", display: "inline-flex", alignSelf: "center" }}>
+                <button
+                  type="button"
+                  onClick={handleViewBgClick}
+                  disabled={bottomPanelAnimatingOut}
+                  style={{ ...styles.viewBgBtn, ...styles.viewBgBtnAbovePanel }}
+                  className="view-bg-btn view-bg-btn-panel"
+                  aria-label={showBgPanel ? "Hide virtual backgrounds" : "View virtual backgrounds"}
+                >
+                  <img
+                    src={showBgPanel ? "/img/Sticker.png" : "/img/virtual_background_button_img.png"}
+                    alt="Virtual Background"
+                    style={{
+                      width: showBgPanel ? 32 : 24,
+                      height: showBgPanel ? 32 : 24,
+                      objectFit: "contain",
+                      transition: "width 200ms ease, height 200ms ease, transform 200ms ease",
+                      transform: showBgPanel ? "scale(1.08)" : "scale(1)",
+                    }}
+                  />
+                </button>
+              </div>
+              {(showBgPanel || bottomPanelAnimatingOut) && (
+                <div style={styles.bottomPanelExpandedOnly} className="bottom-panel">
+                  <div style={styles.bgSection} className="bg-section">
+                    <p style={{ ...styles.bgTitle, marginBottom: 14, textAlign: "center" }}>
+                      Choose your sticker
+                    </p>
+                    {renderStickerThumbs()}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedStickerSrc && phase !== "preview" && (
+            <div
+              style={{
+                position: "fixed",
+                left: "50%",
+                bottom: selectedBg === "lwyw-2" ? 180 : 240,
+                transform: "translateX(-50%)",
+                width: selectedBg === "lwyw-2" ? 320 : "auto",
+                maxWidth: selectedBg === "lwyw-2" ? 320 : 320,
+                height: selectedBg === "lwyw-2" ? 260 : "auto",
+                maxHeight: selectedBg === "lwyw-2" ? 260 : 240,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 8,
+                zIndex: 1000,
+                overflow: "hidden",
+              }}
+              ref={previewRef}
             >
               <img
-                src={showBgPanel ? "/img/Sticker.png" : "/img/virtual_background_button_img.png"}
-                alt="Virtual Background"
+                src={selectedStickerSrc}
+                alt="Sticker Preview"
                 style={{
-                  width: showBgPanel ? 32 : 24,
-                  height: showBgPanel ? 32 : 24,
+                  width: selectedBg === "lwyw-2" ? "100%" : "auto",
+                  height: "auto",
                   objectFit: "contain",
-                  transition: "width 200ms ease, height 200ms ease, transform 200ms ease",
-                  transform: showBgPanel ? "scale(1.08)" : "scale(1)",
+                  maxWidth: "100%",
+                  maxHeight: selectedBg === "lwyw-2" ? 244 : 224,
                 }}
               />
-            </button>
-          </div>
-          {(showBgPanel || bottomPanelAnimatingOut) && (
-          <div style={styles.bottomPanelExpandedOnly} className="bottom-panel">
-            <div style={styles.bgSection} className="bg-section">
-            <p style={{ ...styles.bgTitle, marginBottom: 14, textAlign: "center" }}>
-              Choose your sticker
-            </p>
-            <div style={styles.bgThumbs} className="bg-thumbs">
-              {BACKGROUNDS.map((bg) => (
-                  <button
-                    key={bg.id}
-                              onClick={() => {
-                                setSelectedBg(bg.id);
-                                setDisableBgFilter(bg.type === "image");
-                              }}
-                    style={{
-                      ...styles.bgThumb,
-                      background: bg.type === "none" && bg.card
-                        ? `${bg.preview} url(${bg.card}) center/50% no-repeat`
-                        : bg.id === "lwyw-1" && isDesktop && bg.card
-                        ? `url(${bg.card}) center 72% / ${bg.cardSize || "contain"} no-repeat`
-                        : bg.card
-                        ? `url(${bg.card}) center/${bg.cardSize || "contain"} no-repeat`
-                        : bg.type === "image" && bg.src
-                        ? `url(${bg.src}) center/cover`
-                        : bg.preview,
-                      ...(selectedBg === bg.id ? styles.bgThumbActive : {}),
-                    }}
-                    className="bg-thumb"
-                    title={bg.label}
-                  >
-                  </button>
-                ))}
             </div>
-            </div>
-          </div>
           )}
-        </div>
-      )}
 
-      {selectedStickerSrc && phase !== "preview" && (
-        <div
-          style={{
-            position: "fixed",
-            left: "50%",
-            bottom: selectedBg === "lwyw-2" ? 180 : 240,
-            transform: "translateX(-50%)",
-            width: selectedBg === "lwyw-2" ? 320 : "auto",
-            maxWidth: selectedBg === "lwyw-2" ? 320 : 320,
-            height: selectedBg === "lwyw-2" ? 220 : "auto",
-            maxHeight: selectedBg === "lwyw-2" ? 220 : 200,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 8,
-            zIndex: 1000,
-            overflow: "hidden",
-          }}
-          ref={previewRef}
-        >
-          <img
-            src={selectedStickerSrc}
-            alt="Sticker Preview"
+          <div
             style={{
-              width: selectedBg === "lwyw-2" ? "100%" : "auto",
-              height: "auto",
-              objectFit: "contain",
-              maxWidth: "100%",
+              ...styles.bottomPanel,
+              ...styles.bottomPanelCollapsed,
+              zIndex: 5,
+              ...(phase !== "preview" ? { paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" } : {}),
             }}
-          />
-        </div>
-      )}
-
-      {/* Controls row — record button + View Virtual Background (when collapsed); countdown/recording/preview */}
-        <div
-          style={{
-            ...styles.bottomPanel,
-            ...styles.bottomPanelCollapsed,
-            zIndex: 5,
-            ...(phase !== "preview" ? { paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" } : {}),
-          }}
-          className={`bottom-panel${phase !== "preview" ? " bottom-panel-with-bg-btn" : ""}`}
-        >
-        <div
-          style={{
-            ...styles.controlsRow,
-            ...styles.controlsRowColumn,
-          }}
-          className="controls-row"
-        >
-          {phase === "setup" && (
-            <button
-              onClick={() => {
-                setRecordBtnPressed(true);
-                setTimeout(() => {
-                  setRecordBtnPressed(false);
-                  startCountdown();
-                }, 350);
+            className={`bottom-panel${phase !== "preview" ? " bottom-panel-with-bg-btn" : ""}`}
+          >
+            <div
+              style={{
+                ...styles.controlsRow,
+                ...styles.controlsRowColumn,
               }}
-              disabled={!cameraReady || recordBtnPressed}
-              style={{ ...styles.recordBtn, opacity: cameraReady ? 1 : 0.4 }}
-              className={`record-btn${recordBtnPressed ? " record-btn-pressed" : ""}`}
-              aria-label="Start recording"
+              className="controls-row"
             >
-              <span style={styles.recordDot} />
-            </button>
-          )}
-          {phase === "countdown" && (
-              <button style={{ ...styles.recordBtn, opacity: 0.4 }} className="record-btn" disabled aria-label="Preparing…">
-                <span style={styles.recordDot} />
-              </button>
-          )}
-          {phase === "recording" && (
-              <button onClick={stopRecording} style={{ ...styles.recordBtn, ...styles.recordBtnActive }} className="record-btn" aria-label="Stop recording">
-                <span style={styles.stopSquare} />
-              </button>
-          )}
-          {phase === "preview" && (
-            <div style={styles.previewBtns} className="preview-btns anim-slide-up">
-              <button onClick={retake} style={styles.outlineBtn} className="outline-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 7 }}>
-                  <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
-                </svg>
-                Retake
-              </button>
-              <button onClick={() => onNext(recordedBlob)} style={styles.filledBtn} className="filled-btn">
-                Use This
-                <svg style={{ marginLeft: 8 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                </svg>
-              </button>
+              {phase === "preview" ? renderPreviewControls() : renderRecordControls()}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div style={styles.bottomPanelFixed} className="bottom-panel">
+          {phase !== "preview" ? (
+            <div
+              style={{
+                pointerEvents: phase === "setup" ? "auto" : "none",
+                opacity: phase === "setup" ? 1 : 0.85,
+              }}
+            >
+              <div style={styles.bgSection} className="bg-section">
+                <p style={{ ...styles.bgTitle, marginBottom: 14, textAlign: "center" }}>
+                  Choose your sticker
+                </p>
+                {renderStickerThumbs(phase !== "setup")}
+              </div>
+            </div>
+          ) : (
+            <div style={styles.panelPreviewActions}>
+              {renderPreviewControls()}
             </div>
           )}
         </div>
-        </div>
-
+      )}
 
     </div>
   );

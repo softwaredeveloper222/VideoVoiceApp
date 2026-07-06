@@ -256,6 +256,14 @@ export const styles = {
 
     // ── Camera screen
     cameraScreen: {
+        height: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        background: "#050508",
+        overflow: "hidden",
+        position: "relative",
+    },
+    cameraScreenDesktop: {
         height: "100vh",
         display: "flex",
         flexDirection: "column",
@@ -264,6 +272,13 @@ export const styles = {
         position: "relative",
     },
     cameraView: {
+        flex: 1,
+        position: "relative",
+        minHeight: 0,
+        overflow: "hidden",
+        background: "#000",
+    },
+    cameraViewDesktop: {
         position: "absolute",
         inset: 0,
         overflow: "hidden",
@@ -487,8 +502,8 @@ export const styles = {
     // Viewfinder corners
     fcTL: { position: "absolute", top: 58, left: 16, width: 22, height: 22, zIndex: 15, borderTop: "1.5px solid rgba(255,255,255,0.45)", borderLeft: "1.5px solid rgba(255,255,255,0.45)" },
     fcTR: { position: "absolute", top: 58, right: 16, width: 22, height: 22, zIndex: 15, borderTop: "1.5px solid rgba(255,255,255,0.45)", borderRight: "1.5px solid rgba(255,255,255,0.45)" },
-    fcBL: { position: "absolute", bottom: 218, left: 16, width: 22, height: 22, zIndex: 15, borderBottom: "1.5px solid rgba(255,255,255,0.45)", borderLeft: "1.5px solid rgba(255,255,255,0.45)" },
-    fcBR: { position: "absolute", bottom: 218, right: 16, width: 22, height: 22, zIndex: 15, borderBottom: "1.5px solid rgba(255,255,255,0.45)", borderRight: "1.5px solid rgba(255,255,255,0.45)" },
+    fcBL: { position: "absolute", bottom: 230, left: 16, width: 22, height: 22, zIndex: 15, borderBottom: "1.5px solid rgba(255,255,255,0.45)", borderLeft: "1.5px solid rgba(255,255,255,0.45)" },
+    fcBR: { position: "absolute", bottom: 230, right: 16, width: 22, height: 22, zIndex: 15, borderBottom: "1.5px solid rgba(255,255,255,0.45)", borderRight: "1.5px solid rgba(255,255,255,0.45)" },
 
     // ── Bottom panel (camera)
     bottomPanel: {
@@ -515,6 +530,33 @@ export const styles = {
         alignItems: "stretch",
         padding: 0,
         zIndex: 10,
+    },
+    recordControlsAbsolute: {
+        position: "absolute",
+        bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+        left: 0,
+        right: 0,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 5,
+        pointerEvents: "none",
+    },
+    recordControlsAbsoluteBtn: {
+        pointerEvents: "auto",
+    },
+    bottomPanelFixed: {
+        flexShrink: 0,
+        borderTop: "2px solid white",
+        borderTopLeftRadius: 0,
+        borderTopRightRadius: 0,
+        paddingTop: 14,
+        paddingRight: 20,
+        paddingBottom: "calc(14px + env(safe-area-inset-bottom, 0px))",
+        paddingLeft: 20,
+        background: "rgba(7, 24, 45, 0.95)",
+        width: "100%",
+        boxSizing: "border-box",
     },
     viewBgBtnAbovePanel: {
         alignSelf: "center",
@@ -843,6 +885,16 @@ export const styles = {
         gap: 12,
         justifyContent: "center",
         width: "100%",
+    },
+    panelPreviewActions: {
+        display: "flex",
+        gap: 12,
+        justifyContent: "center",
+        alignItems: "center",
+        width: "100%",
+        minHeight: 112,
+        paddingTop: 4,
+        paddingBottom: 4,
     },
     hint: {
         textAlign: "center",
