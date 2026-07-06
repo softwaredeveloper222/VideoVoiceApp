@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import { HistoryFallback } from "./useAppNavigation";
 import { supabase, VIDEOS_BUCKET } from "./supabase";
 import { styles } from "./styles";
 import IntroScreen from "./screens/IntroScreen";
@@ -82,6 +83,7 @@ export default function App() {
 
   return (
     <div style={styles.app}>
+      <HistoryFallback />
       {/* CiscoSansTT loaded via @font-face in index.css */}
       <Routes>
         <Route path="/" element={<IntroScreen onNext={() => navigate("/question")} />} />
